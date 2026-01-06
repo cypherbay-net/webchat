@@ -1,63 +1,108 @@
-# CypherBay - Anonymous Encrypted Messenger
+# CypherBay
 
-Anonymous, end-to-end encrypted communication without registration.
+<p align="center">
+  <strong>Anonymous, End-to-End Encrypted Web Messenger</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/cypherbay-net/webchat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cypherbay-net/webchat?color=39ff14&style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/PHP-7.4+-39ff14?style=flat-square" alt="PHP 7.4+">
+  <img src="https://img.shields.io/badge/Encryption-AES--256--GCM-39ff14?style=flat-square" alt="AES-256-GCM">
+  <img src="https://img.shields.io/badge/No_Tracking-100%25-39ff14?style=flat-square" alt="No Tracking">
+</p>
+
+---
+
+## Overview
+
+CypherBay is a minimalist, privacy-focused web messenger. Create encrypted chat rooms without registration, accounts, or personal data. All messages are encrypted in your browser before being sent - the server only sees encrypted data.
 
 ## Features
 
-- **End-to-End Encryption** with AES-256-GCM
-- **No Registration** - no account, no email
-- **No Tracking** - no cookies, no analytics
-- **Self-Hosting** - fully self-hostable
-- **Zero-Trust** - server only sees encrypted data
+| Feature | Description |
+|---------|-------------|
+| **E2E Encryption** | AES-256-GCM encryption with PBKDF2 key derivation |
+| **Anonymous** | No registration, no accounts, no email required |
+| **Zero Tracking** | No cookies, no analytics, no external services |
+| **File Sharing** | Share images, videos, and files (via 0x0.st) |
+| **Self-Destructing** | Messages auto-delete after 1 hour |
+| **Self-Hostable** | Full control over your data |
 
-## Technology
+## Security Model
 
-- **Frontend**: HTML, CSS, JavaScript (Vanilla)
-- **Backend**: PHP
-- **Cryptography**: Web Crypto API (PBKDF2 + AES-256-GCM)
+### What CypherBay protects:
+- Message content (end-to-end encrypted)
+- Your identity (no accounts, no names)
+- Chat history (auto-deletes after 1 hour)
 
-## Installation
+### Limitations (be aware):
+- Metadata (IP addresses, connection times) visible to server
+- Password must be shared via secure channel (not in chat)
+- Uploaded files are NOT encrypted (only the link is)
+- Device security is your responsibility
+
+> **For maximum anonymity**: Use Tor Browser
+
+## Quick Start
 
 ### Requirements
+- PHP 7.4+ with `allow_url_fopen` enabled
+- Web server (Apache, Nginx, or PHP built-in)
 
-- PHP 7.4+ with write permissions
-- Web server (Apache, Nginx, or PHP Built-in Server)
+### Installation
 
-### Setup
-
-1. Clone repository or copy files:
 ```bash
-git clone <repo-url> cypherbay
+# Clone the repository
+git clone https://github.com/cypherbay-net/webchat.git cypherbay
 cd cypherbay
-```
 
-2. Create data directory and set permissions:
-```bash
+# Create data directory with proper permissions
 mkdir -p data/sessions
 chmod 700 data/sessions
-```
 
-3. Start web server:
-
-**With PHP Built-in Server (Development):**
-```bash
+# Start development server
 php -S localhost:8000
 ```
 
-**With Apache:**
-- Set DocumentRoot to the cypherbay directory
-- Enable mod_rewrite (optional)
+Open `http://localhost:8000` in your browser.
 
-**With Nginx:**
+### Production Setup
+
+<details>
+<summary><strong>Apache Configuration</strong></summary>
+
+```apache
+<VirtualHost *:443>
+    ServerName chat.yourdomain.com
+    DocumentRoot /var/www/cypherbay
+    
+    <Directory /var/www/cypherbay>
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    SSLEngine on
+    SSLCertificateFile /path/to/cert.pem
+    SSLCertificateKeyFile /path/to/key.pem
+</VirtualHost>
+```
+</details>
+
+<details>
+<summary><strong>Nginx Configuration</strong></summary>
+
 ```nginx
 server {
-    listen 80;
-    server_name cypherbay.local;
-    root /path/to/cypherbay;
+    listen 443 ssl http2;
+    server_name chat.yourdomain.com;
+    root /var/www/cypherbay;
     index index.html;
 
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
     location /api/ {
-        try_files $uri $uri/ =404;
+        try_files $uri =404;
         fastcgi_pass unix:/var/run/php/php-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
@@ -68,60 +113,70 @@ server {
     }
 }
 ```
+</details>
 
-4. Open browser: `http://localhost:8000`
+<details>
+<summary><strong>Cleanup Cronjob</strong></summary>
 
-### Cleanup (Optional)
+Automatically delete expired sessions:
 
-Automatically delete old sessions via cronjob:
 ```bash
-# Every 5 minutes
-*/5 * * * * php /path/to/cypherbay/api/cleanup.php
+# Add to crontab (every 5 minutes)
+*/5 * * * * php /var/www/cypherbay/api/cleanup.php > /dev/null 2>&1
 ```
+</details>
 
-## Security
-
-### What CypherBay protects:
-- Message content (encrypted with AES-256-GCM)
-- Identities (no accounts, no names)
-
-### System Limitations:
-- **Metadata** (IP addresses, connection times) is visible to the server
-- **Password sharing** must be done via a secure channel
-- **Device security** is the user's responsibility
-- For maximum anonymity: use **Tor Browser**
-
-## Structure
+## Project Structure
 
 ```
 cypherbay/
-├── index.html          # Main page (SPA)
+├── index.html           # Single-page application
 ├── css/
-│   └── style.css       # Styles
+│   └── style.css        # Dark theme styles
 ├── js/
-│   ├── app.js          # Application logic
-│   └── crypto.js       # Encryption
+│   ├── app.js           # Application logic
+│   └── crypto.js        # Cryptographic functions
 ├── api/
-│   ├── send.php        # Send message
-│   ├── messages.php    # Get messages
-│   └── cleanup.php     # Delete old sessions
-├── data/
-│   └── sessions/       # Temporary session data
-└── README.md
+│   ├── send.php         # Send encrypted message
+│   ├── messages.php     # Fetch messages
+│   ├── upload.php       # File upload proxy
+│   ├── delete.php       # Delete chat session
+│   └── cleanup.php      # Remove expired sessions
+└── data/
+    └── sessions/        # Encrypted session storage
 ```
 
-## How it works
+## How It Works
 
-1. **Create chat**: A random Session ID is generated
-2. **Choose password**: The password is NEVER sent to the server
-3. **Share session**: Share Session ID and password via secure channel
-4. **Encryption**: Every message is encrypted in the browser with AES-256-GCM
-5. **Server as relay**: The server only stores encrypted data temporarily
+```
+┌──────────────┐     Encrypted      ┌──────────────┐     Encrypted      ┌──────────────┐
+│   Browser A  │ ─────────────────► │    Server    │ ─────────────────► │   Browser B  │
+│              │                    │              │                    │              │
+│  [Encrypt]   │                    │ [Store Only] │                    │  [Decrypt]   │
+│  with AES    │                    │ Cannot Read  │                    │  with AES    │
+└──────────────┘                    └──────────────┘                    └──────────────┘
+```
+
+1. **Create Chat** → Random Session ID generated
+2. **Set Password** → Password never leaves your browser
+3. **Share Credentials** → Send Session ID + password via secure channel
+4. **Chat** → All messages encrypted client-side with AES-256-GCM
+5. **Auto-Cleanup** → Sessions expire after 1 hour of inactivity
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+
+- Report bugs
+- Suggest features
+- Submit pull requests
 
 ## License
 
-MIT License - Free to use and modify.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**CypherBay** - Privacy by Design
+<p align="center">
+  <strong>CypherBay</strong> — Privacy by Design
+</p>
