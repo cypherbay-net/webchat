@@ -3,6 +3,17 @@
 header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        http_response_code(403);
+        echo json_encode(['error' => 'HTTPS required']);
+        exit;
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -42,9 +53,23 @@ if (!is_dir($dataDir)) {
 
 $sessionFile = $dataDir . '/' . $sessionId . '.json';
 
+$fp = fopen($sessionFile, 'c+');
+if (!$fp) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Server error']);
+    exit;
+}
+
+if (!flock($fp, LOCK_EX)) {
+    fclose($fp);
+    http_response_code(500);
+    echo json_encode(['error' => 'Server error']);
+    exit;
+}
+
 $messages = [];
-if (file_exists($sessionFile)) {
-    $content = file_get_contents($sessionFile);
+$content = stream_get_contents($fp);
+if ($content) {
     $sessionData = json_decode($content, true);
     if ($sessionData && isset($sessionData['messages'])) {
         $messages = $sessionData['messages'];
@@ -73,13 +98,11 @@ $sessionData = [
     'lastActivity' => time()
 ];
 
-$fp = fopen($sessionFile, 'c');
-if (flock($fp, LOCK_EX)) {
-    ftruncate($fp, 0);
-    fwrite($fp, json_encode($sessionData));
-    fflush($fp);
-    flock($fp, LOCK_UN);
-}
+ftruncate($fp, 0);
+rewind($fp);
+fwrite($fp, json_encode($sessionData));
+fflush($fp);
+flock($fp, LOCK_UN);
 fclose($fp);
 
 echo json_encode(['success' => true, 'timestamp' => $message['timestamp']]);

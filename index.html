@@ -5,16 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="CypherBay - Anonymous, end-to-end encrypted web messenger without registration">
     <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://0x0.st; media-src https://0x0.st; connect-src 'self'; frame-ancestors 'none'; form-action 'self';">
+    <meta name="referrer" content="no-referrer">
     <title>CypherBay - Anonymous Encrypted Messenger</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="app">
-        <!-- Landing Page -->
+        
         <div id="landing" class="page active">
             <header>
-                <h1>CypherBay</h1>
-                <p class="tagline">Anonymous, end-to-end encrypted communication</p>
+                <div class="header-content">
+                    <div class="header-left"></div>
+                    <div class="header-center">
+                        <h1>CypherBay</h1>
+                        <p class="tagline">Anonymous, end-to-end encrypted communication</p>
+                    </div>
+                    <div class="header-right">
+                        <a href="https://github.com/cypherbay-net/webchat" target="_blank" rel="noopener" class="github-link" title="View on GitHub">
+                            <svg height="24" width="24" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
             </header>
             
             <main class="landing-content">
@@ -61,11 +75,11 @@
             </main>
 
             <footer>
-                <p>CypherBay - Privacy by Design | <a href="https://github.com/cypherbay-net/webchat" target="_blank" rel="noopener">GitHub</a></p>
+                <p>CypherBay - Privacy by Design</p>
             </footer>
         </div>
 
-        <!-- Create Chat Page -->
+        
         <div id="create" class="page">
             <header>
                 <button class="btn-back" data-page="landing">&lt; Back</button>
@@ -85,7 +99,7 @@
 
                 <div class="form-group">
                     <label for="create-password">Chat Password</label>
-                    <input type="password" id="create-password" placeholder="Enter secure password" autocomplete="off">
+                    <input type="password" id="create-password" placeholder="Min. 8 characters" autocomplete="off" minlength="8">
                     <p class="hint">The password is never sent to the server. It is used for encryption only.</p>
                 </div>
 
@@ -98,7 +112,7 @@
             </main>
         </div>
 
-        <!-- Join Chat Page -->
+        
         <div id="join" class="page">
             <header>
                 <button class="btn-back" data-page="landing">&lt; Back</button>
@@ -113,7 +127,7 @@
 
                 <div class="form-group">
                     <label for="join-password">Chat Password</label>
-                    <input type="password" id="join-password" placeholder="Enter password" autocomplete="off">
+                    <input type="password" id="join-password" placeholder="Min. 8 characters" autocomplete="off" minlength="8">
                 </div>
 
                 <p class="hint">
@@ -125,7 +139,7 @@
             </main>
         </div>
 
-        <!-- Chat Page -->
+        
         <div id="chat" class="page">
             <header class="chat-header">
                 <button class="btn-back" data-page="landing" id="btn-leave-chat">&lt; Leave</button>
@@ -133,9 +147,17 @@
                     <span class="chat-session-label">Session:</span>
                     <span id="chat-session-id" class="chat-session-value"></span>
                 </div>
-                <div id="connection-status" class="status-indicator">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Connecting...</span>
+                <div class="chat-header-actions">
+                    <button id="btn-delete-chat" class="btn-danger-small" title="Delete Chat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                        </svg>
+                    </button>
+                    <div id="connection-status" class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Connecting...</span>
+                    </div>
                 </div>
             </header>
 
@@ -149,8 +171,18 @@
 
                 <form id="message-form" class="message-form">
                     <textarea id="message-input" placeholder="Enter message..." rows="1" disabled></textarea>
+                    <input type="file" id="file-input" accept="image/*,video/*,audio/*,.pdf,.txt,.zip" hidden>
+                    <button type="button" id="btn-attach" class="btn-attach" disabled title="Attach file">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                        </svg>
+                    </button>
                     <button type="submit" id="btn-send" disabled>Send</button>
                 </form>
+                <div id="upload-progress" class="upload-progress hidden">
+                    <div class="upload-progress-bar"></div>
+                    <span class="upload-progress-text">Uploading...</span>
+                </div>
             </main>
 
             <div id="crypto-info" class="crypto-info">

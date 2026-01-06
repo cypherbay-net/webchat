@@ -51,6 +51,10 @@
         elements.messageForm = document.getElementById('message-form');
         elements.messageInput = document.getElementById('message-input');
         elements.btnSend = document.getElementById('btn-send');
+        elements.fileInput = document.getElementById('file-input');
+        elements.btnAttach = document.getElementById('btn-attach');
+        elements.uploadProgress = document.getElementById('upload-progress');
+        elements.btnDeleteChat = document.getElementById('btn-delete-chat');
 
         elements.backButtons = document.querySelectorAll('.btn-back');
     }
@@ -79,7 +83,7 @@
         });
 
         elements.createPassword.addEventListener('input', () => {
-            elements.btnStartChat.disabled = elements.createPassword.value.length < 1;
+            elements.btnStartChat.disabled = elements.createPassword.value.length < 8;
         });
 
         elements.btnStartChat.addEventListener('click', async () => {
@@ -94,7 +98,7 @@
         const validateJoinForm = () => {
             const sessionId = elements.joinSession.value.trim();
             const password = elements.joinPassword.value;
-            elements.btnJoinChat.disabled = !CypherCrypto.isValidSessionId(sessionId) || password.length < 1;
+            elements.btnJoinChat.disabled = !CypherCrypto.isValidSessionId(sessionId) || password.length < 8;
         };
 
         elements.joinSession.addEventListener('input', validateJoinForm);
@@ -132,6 +136,22 @@
         elements.messageInput.addEventListener('input', () => {
             elements.messageInput.style.height = 'auto';
             elements.messageInput.style.height = Math.min(elements.messageInput.scrollHeight, 150) + 'px';
+        });
+
+        elements.btnAttach.addEventListener('click', () => {
+            elements.fileInput.click();
+        });
+
+        elements.fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await uploadAndSendFile(file);
+                elements.fileInput.value = '';
+            }
+        });
+
+        elements.btnDeleteChat.addEventListener('click', async () => {
+            await showDeleteConfirmation();
         });
 
         elements.backButtons.forEach(btn => {
@@ -180,6 +200,7 @@
             elements.messageInput.value = '';
             elements.messageInput.disabled = false;
             elements.btnSend.disabled = false;
+            elements.btnAttach.disabled = false;
 
             showPage('chat');
 
@@ -205,6 +226,7 @@
 
         elements.messageInput.disabled = true;
         elements.btnSend.disabled = true;
+        elements.btnAttach.disabled = true;
 
         showPage('landing');
     }
@@ -252,6 +274,105 @@
             console.error('Failed to send message:', error);
             addSystemMessage('Error sending message.');
         }
+    }
+
+    async function uploadAndSendFile(file) {
+        const maxSize = 100 * 1024 * 1024;
+        if (file.size > maxSize) {
+            addSystemMessage('File too large. Max 100MB.');
+            return;
+        }
+
+        const confirmed = await showUploadWarning(file.name);
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            elements.uploadProgress.classList.remove('hidden');
+            elements.btnAttach.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('api/upload.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const responseText = await response.text();
+
+            if (!response.ok) {
+                throw new Error('Upload failed: ' + responseText);
+            }
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (e) {
+                throw new Error('Invalid JSON: ' + responseText);
+            }
+
+            if (!result.success || !result.url) {
+                throw new Error(result.error || 'Upload failed');
+            }
+
+            const trimmedUrl = result.url;
+
+            const messageId = CypherCrypto.generateMessageId();
+            const fileType = getFileType(file.type);
+
+            const messageData = {
+                id: messageId,
+                type: 'file',
+                fileType: fileType,
+                fileName: file.name,
+                fileSize: file.size,
+                url: trimmedUrl,
+                timestamp: Date.now()
+            };
+
+            const encryptedPayload = await CypherCrypto.encrypt(JSON.stringify(messageData), state.cryptoKey);
+            state.sentMessageIds.add(messageId);
+
+            const sendResponse = await fetch('api/send.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sessionId: state.sessionId,
+                    payload: encryptedPayload
+                })
+            });
+
+            if (sendResponse.ok) {
+                displayMessage(messageData, true);
+            } else {
+                addSystemMessage('Could not send file message.');
+            }
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            addSystemMessage('File upload failed.');
+        } finally {
+            elements.uploadProgress.classList.add('hidden');
+            elements.btnAttach.disabled = false;
+        }
+    }
+
+    function getFileType(mimeType) {
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType.startsWith('video/')) return 'video';
+        if (mimeType.startsWith('audio/')) return 'audio';
+        return 'file';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 
     function startPolling() {
@@ -331,7 +452,12 @@
 
         const contentEl = document.createElement('div');
         contentEl.className = 'message-content';
-        contentEl.textContent = messageData.text;
+
+        if (messageData.type === 'file') {
+            contentEl.appendChild(createFileContent(messageData));
+        } else {
+            contentEl.textContent = messageData.text;
+        }
 
         const metaEl = document.createElement('div');
         metaEl.className = 'message-meta';
@@ -352,6 +478,53 @@
 
         elements.messages.appendChild(messageEl);
         scrollToBottom();
+    }
+
+    function createFileContent(messageData) {
+        const container = document.createElement('div');
+        container.className = 'file-content';
+
+        if (messageData.fileType === 'image') {
+            const img = document.createElement('img');
+            img.src = messageData.url;
+            img.alt = messageData.fileName;
+            img.className = 'message-image';
+            img.loading = 'lazy';
+            img.addEventListener('click', () => window.open(messageData.url, '_blank'));
+            container.appendChild(img);
+        } else if (messageData.fileType === 'video') {
+            const video = document.createElement('video');
+            video.src = messageData.url;
+            video.controls = true;
+            video.className = 'message-video';
+            video.preload = 'metadata';
+            container.appendChild(video);
+        } else if (messageData.fileType === 'audio') {
+            const audio = document.createElement('audio');
+            audio.src = messageData.url;
+            audio.controls = true;
+            audio.className = 'message-audio';
+            container.appendChild(audio);
+        } else {
+            const fileLink = document.createElement('a');
+            fileLink.href = messageData.url;
+            fileLink.target = '_blank';
+            fileLink.rel = 'noopener';
+            fileLink.className = 'file-link';
+            fileLink.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                <span class="file-info">
+                    <span class="file-name">${messageData.fileName}</span>
+                    <span class="file-size">${formatFileSize(messageData.fileSize)}</span>
+                </span>
+            `;
+            container.appendChild(fileLink);
+        }
+
+        return container;
     }
 
     function displayEncryptionError(timestamp) {
@@ -426,6 +599,174 @@
         setTimeout(() => {
             toast.classList.remove('show');
         }, 2000);
+    }
+
+    function showUploadWarning(fileName) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <span class="modal-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </span>
+                    <h3>File Upload Warning</h3>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-filename">${fileName}</p>
+                    <ul class="modal-warnings">
+                        <li>The file will be uploaded to an external server (0x0.st)</li>
+                        <li>The file itself is <strong>NOT encrypted</strong></li>
+                        <li>Only the link in the chat is encrypted</li>
+                        <li>Anyone with the link can access the file</li>
+                    </ul>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary modal-cancel">Cancel</button>
+                    <button class="btn-primary modal-confirm">Upload</button>
+                </div>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+            });
+
+            const cleanup = (result) => {
+                overlay.classList.remove('show');
+                setTimeout(() => {
+                    overlay.remove();
+                }, 200);
+                resolve(result);
+            };
+
+            modal.querySelector('.modal-cancel').addEventListener('click', () => cleanup(false));
+            modal.querySelector('.modal-confirm').addEventListener('click', () => cleanup(true));
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) cleanup(false);
+            });
+        });
+    }
+
+    function showDeleteConfirmation() {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <span class="modal-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
+                    </span>
+                    <h3>Delete Chat</h3>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-text">This will permanently delete all messages in this chat session.</p>
+                    <div class="form-group">
+                        <label for="delete-password">Enter chat password to confirm:</label>
+                        <input type="password" id="delete-password" placeholder="Password" autocomplete="off">
+                    </div>
+                    <p class="modal-error hidden" id="delete-error"></p>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary modal-cancel">Cancel</button>
+                    <button class="btn-danger modal-delete">Delete Chat</button>
+                </div>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            const passwordInput = modal.querySelector('#delete-password');
+            const errorEl = modal.querySelector('#delete-error');
+            const deleteBtn = modal.querySelector('.modal-delete');
+
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+                passwordInput.focus();
+            });
+
+            const cleanup = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => {
+                    overlay.remove();
+                }, 200);
+                resolve();
+            };
+
+            const attemptDelete = async () => {
+                const enteredPassword = passwordInput.value;
+                
+                if (!enteredPassword) {
+                    errorEl.textContent = 'Please enter the password';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (enteredPassword !== state.password) {
+                    errorEl.textContent = 'Incorrect password';
+                    errorEl.classList.remove('hidden');
+                    passwordInput.value = '';
+                    return;
+                }
+
+                deleteBtn.disabled = true;
+                deleteBtn.textContent = 'Deleting...';
+
+                try {
+                    const response = await fetch('api/delete.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sessionId: state.sessionId
+                        })
+                    });
+
+                    if (response.ok) {
+                        cleanup();
+                        leaveChat();
+                        showToast('Chat deleted');
+                    } else {
+                        errorEl.textContent = 'Failed to delete chat';
+                        errorEl.classList.remove('hidden');
+                        deleteBtn.disabled = false;
+                        deleteBtn.textContent = 'Delete Chat';
+                    }
+                } catch (error) {
+                    errorEl.textContent = 'Error deleting chat';
+                    errorEl.classList.remove('hidden');
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = 'Delete Chat';
+                }
+            };
+
+            modal.querySelector('.modal-cancel').addEventListener('click', cleanup);
+            deleteBtn.addEventListener('click', attemptDelete);
+            passwordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') attemptDelete();
+            });
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) cleanup();
+            });
+        });
     }
 
     function formatTime(timestamp) {
