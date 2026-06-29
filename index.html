@@ -100,6 +100,18 @@
                 <section class="actions">
                     <button id="btn-create" class="btn-primary">Create New Chat</button>
                     <button id="btn-join" class="btn-secondary">Join Chat</button>
+                    <div id="resume-session" class="resume-session hidden">
+                        <div class="resume-info">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span>Saved session: <code id="resume-session-id"></code></span>
+                        </div>
+                        <div class="resume-actions">
+                            <button id="btn-resume" class="btn-secondary btn-resume">Rejoin</button>
+                            <button id="btn-clear-session" class="btn-clear-session" title="Remove saved session">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="transparency">
@@ -164,6 +176,14 @@
                     There is no password recovery.
                 </div>
 
+                <div class="remember-row">
+                    <label class="remember-label">
+                        <input type="checkbox" id="remember-session">
+                        <span>Remember this session</span>
+                    </label>
+                    <p class="remember-hint">Saves the Session ID in cookie <code>cypherbay_session</code> (path <code>/</code>, expires after 1h). The password is never stored.</p>
+                </div>
+
                 <button id="btn-start-chat" class="btn-primary" disabled>Start Chat</button>
             </main>
         </div>
@@ -207,6 +227,9 @@
                 </div>
                 <div class="chat-header-actions">
                     <span id="session-timer" class="session-timer"></span>
+                    <button id="btn-invite" class="btn-sound" title="Invite">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    </button>
                     <button id="sound-toggle" class="btn-sound" title="Toggle sound"></button>
                     <button id="btn-delete-chat" class="btn-danger-small" title="Delete Chat">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

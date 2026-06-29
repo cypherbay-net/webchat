@@ -147,6 +147,55 @@ main { flex: 1; padding: 2rem; max-width: 800px; margin: 0 auto; width: 100%; }
 
 .actions { display: flex; flex-direction: column; gap: 1rem; max-width: 400px; margin: 0 auto; width: 100%; }
 
+.resume-session {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.75rem; padding: 0.65rem 0.9rem;
+    background-color: var(--bg-secondary); border: 1px solid var(--border-color);
+    border-radius: 6px; font-size: 0.8rem;
+}
+.resume-session.hidden { display: none; }
+.resume-info { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); min-width: 0; }
+.resume-info svg { flex-shrink: 0; color: var(--accent-primary); }
+.resume-info code { color: var(--accent-primary); font-size: 0.78rem; word-break: break-all; }
+.resume-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.btn-resume { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
+.btn-clear-session {
+    background: none; border: 1px solid var(--border-color); border-radius: 4px;
+    padding: 0.3rem; cursor: pointer; color: var(--text-muted);
+    display: flex; align-items: center; transition: color 0.2s, border-color 0.2s;
+}
+.btn-clear-session:hover { color: var(--accent-danger); border-color: var(--accent-danger); }
+
+.remember-row { margin-bottom: 1.25rem; }
+.remember-label {
+    display: flex; align-items: center; gap: 0.6rem;
+    cursor: pointer; font-size: 0.85rem; color: var(--text-secondary);
+    user-select: none;
+}
+.remember-label input[type="checkbox"] { accent-color: var(--accent-primary); width: 15px; height: 15px; cursor: pointer; }
+.remember-label span { transition: color 0.2s; }
+.remember-label:hover span { color: var(--text-primary); }
+.remember-hint {
+    margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted);
+    padding-left: 1.6rem; line-height: 1.5;
+}
+.remember-hint code { color: var(--text-secondary); font-size: 0.72rem; }
+
+.modal-invite { max-width: 360px; }
+.invite-qr-wrap { text-align: center; margin-bottom: 1.25rem; }
+.invite-qr-wrap canvas {
+    display: inline-block; border-radius: 6px; max-width: 160px;
+    box-shadow: 0 0 0 6px #fff, 0 0 0 8px var(--border-color);
+}
+.invite-field { margin-bottom: 0.75rem; }
+.invite-field-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem; }
+.invite-field-row { display: flex; gap: 0.4rem; }
+.invite-input {
+    flex: 1; padding: 0.45rem 0.65rem; font-size: 0.78rem; font-family: inherit;
+    background-color: var(--bg-tertiary); border: 1px solid var(--border-color);
+    border-radius: 4px; color: var(--text-secondary); min-width: 0;
+}
+
 .btn-primary, .btn-secondary {
     padding: 1rem 2rem; font-size: 1rem; font-weight: 500; font-family: inherit;
     border: none; border-radius: 4px; cursor: pointer;

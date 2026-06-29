@@ -39,8 +39,9 @@
         bindEvents();
         updateThemeIcon();
         updateSoundIcon();
-        checkUrlHash();
+        checkResumeCookie();
         showPage('landing');
+        checkUrlHash();
     }
 
     function loadTheme() {
@@ -92,7 +93,13 @@
         elements.btnAttach = document.getElementById('btn-attach');
         elements.uploadProgress = document.getElementById('upload-progress');
         elements.btnDeleteChat = document.getElementById('btn-delete-chat');
+        elements.btnInvite = document.getElementById('btn-invite');
         elements.msgRateCounter = document.getElementById('msg-rate-counter');
+        elements.rememberSession = document.getElementById('remember-session');
+        elements.resumeSession = document.getElementById('resume-session');
+        elements.resumeSessionId = document.getElementById('resume-session-id');
+        elements.btnResume = document.getElementById('btn-resume');
+        elements.btnClearSession = document.getElementById('btn-clear-session');
         elements.backButtons = document.querySelectorAll('.btn-back');
     }
 
@@ -209,7 +216,24 @@
         });
 
         elements.btnDeleteChat.addEventListener('click', () => showDeleteConfirmation());
+        elements.btnInvite.addEventListener('click', showInviteModal);
         elements.soundToggle.addEventListener('click', toggleSound);
+
+        elements.btnResume.addEventListener('click', () => {
+            const saved = getSessionCookie();
+            if (saved) {
+                elements.joinSession.value = saved;
+                elements.joinPassword.value = '';
+                elements.btnJoinChat.disabled = true;
+                updatePasswordStrength('', elements.pwStrengthJoin);
+                showPage('join');
+            }
+        });
+
+        elements.btnClearSession.addEventListener('click', () => {
+            clearSessionCookie();
+            elements.resumeSession.classList.add('hidden');
+        });
 
         elements.messages.addEventListener('scroll', () => {
             const dist = elements.messages.scrollHeight - elements.messages.scrollTop - elements.messages.clientHeight;
@@ -335,6 +359,11 @@
             elements.typingIndicator.classList.add('hidden');
             elements.scrollToBottomBtn.classList.remove('visible');
             updateMsgRateCounter();
+
+            if (elements.rememberSession && elements.rememberSession.checked) {
+                setSessionCookie(sessionId);
+                checkResumeCookie();
+            }
 
             showPage('chat');
             addSystemMessage('Chat joined. All messages are end-to-end encrypted.');
@@ -797,6 +826,89 @@
             pwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptDelete(); });
             overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(); });
         });
+    }
+
+    function setSessionCookie(sessionId) {
+        const secure = location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = 'cypherbay_session=' + encodeURIComponent(sessionId) + '; Max-Age=3600; SameSite=Strict; path=/' + secure;
+    }
+
+    function getSessionCookie() {
+        const match = document.cookie.match(/(?:^|;\s*)cypherbay_session=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    function clearSessionCookie() {
+        document.cookie = 'cypherbay_session=; Max-Age=0; SameSite=Strict; path=/';
+    }
+
+    function checkResumeCookie() {
+        const saved = getSessionCookie();
+        if (saved && CypherCrypto.isValidSessionId(saved)) {
+            elements.resumeSessionId.textContent = saved;
+            elements.resumeSession.classList.remove('hidden');
+        } else {
+            elements.resumeSession.classList.add('hidden');
+        }
+    }
+
+    function showInviteModal() {
+        const sessionId = state.sessionId;
+        const joinUrl = window.location.origin + window.location.pathname + '#' + sessionId;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        const modal = document.createElement('div');
+        modal.className = 'modal modal-invite';
+        modal.innerHTML =
+            '<div class="modal-header">' +
+                '<span class="modal-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>' +
+                '<h3>Invite</h3>' +
+            '</div>' +
+            '<div class="modal-body">' +
+                '<div class="invite-qr-wrap">' +
+                    '<canvas id="invite-qr-canvas"></canvas>' +
+                    '<p class="qr-label">Scan to join</p>' +
+                '</div>' +
+                '<div class="invite-field">' +
+                    '<span class="invite-field-label">Link</span>' +
+                    '<div class="invite-field-row">' +
+                        '<input type="text" class="invite-input" id="invite-link-val" readonly value="">' +
+                        '<button class="btn-icon invite-copy" data-copy="link" title="Copy link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="invite-field">' +
+                    '<span class="invite-field-label">Session ID</span>' +
+                    '<div class="invite-field-row">' +
+                        '<input type="text" class="invite-input" id="invite-id-val" readonly value="">' +
+                        '<button class="btn-icon invite-copy" data-copy="id" title="Copy ID"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+                    '</div>' +
+                '</div>' +
+                '<p class="hint" style="margin-top:0.75rem">Share the password through a separate channel.</p>' +
+            '</div>' +
+            '<div class="modal-actions"><button class="btn-secondary modal-cancel">Close</button></div>';
+
+        modal.querySelector('#invite-link-val').value = joinUrl;
+        modal.querySelector('#invite-id-val').value = sessionId;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('show'));
+
+        if (typeof QRCode !== 'undefined') {
+            QRCode.render(modal.querySelector('#invite-qr-canvas'), sessionId);
+        }
+
+        modal.querySelectorAll('.invite-copy').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.dataset.copy === 'link' ? joinUrl : sessionId;
+                copyToClipboard(val);
+            });
+        });
+
+        const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); };
+        modal.querySelector('.modal-cancel').addEventListener('click', close);
+        overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     }
 
     function formatTime(ts) {
