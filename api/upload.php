@@ -3,6 +3,9 @@
 header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
 
 if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
     if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
@@ -15,6 +18,13 @@ if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
+    exit;
+}
+
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(5, 60, 'upload')) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Too many uploads']);
     exit;
 }
 
@@ -36,8 +46,10 @@ if ($file['size'] > $maxSize) {
 $boundary = '----WebKitFormBoundary' . bin2hex(random_bytes(16));
 $fileContents = file_get_contents($file['tmp_name']);
 
+$safeName = preg_replace('/[\x00-\x1f\x7f"\\\\]/', '_', $file['name']);
+
 $body = "--$boundary\r\n";
-$body .= "Content-Disposition: form-data; name=\"file\"; filename=\"" . $file['name'] . "\"\r\n";
+$body .= "Content-Disposition: form-data; name=\"file\"; filename=\"" . $safeName . "\"\r\n";
 $body .= "Content-Type: " . ($file['type'] ?: 'application/octet-stream') . "\r\n\r\n";
 $body .= $fileContents . "\r\n";
 $body .= "--$boundary--\r\n";

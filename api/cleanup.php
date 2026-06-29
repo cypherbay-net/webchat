@@ -1,4 +1,8 @@
 <?php
+if (php_sapi_name() !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 
 $dataDir = __DIR__ . '/../data/sessions';
 
@@ -25,6 +29,15 @@ foreach ($files as $file) {
         $fileAge = $now - filemtime($file);
         
         if ($fileAge > $maxAge) {
+            unlink($file);
+        }
+    }
+}
+
+$ratelimitDir = __DIR__ . '/../data/ratelimit';
+if (is_dir($ratelimitDir)) {
+    foreach (glob($ratelimitDir . '/*.json') as $file) {
+        if ($now - filemtime($file) > 3600) {
             unlink($file);
         }
     }

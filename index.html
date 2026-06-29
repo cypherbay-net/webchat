@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <meta name="description" content="CypherBay - Anonymous, end-to-end encrypted web messenger without registration">
     <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://0x0.st; media-src https://0x0.st; connect-src 'self'; frame-ancestors 'none'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://0x0.st; media-src https://0x0.st; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
     <meta name="referrer" content="no-referrer">
-    <title>CypherBay - Anonymous Encrypted Messenger</title>
+    <title>CypherBay</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="app">
-        
+
         <div id="landing" class="page active">
             <header>
                 <div class="header-content">
@@ -22,6 +22,7 @@
                         <p class="tagline">Anonymous, end-to-end encrypted communication</p>
                     </div>
                     <div class="header-right">
+                        <button id="theme-toggle" class="btn-theme" title="Toggle theme"></button>
                         <a href="https://github.com/cypherbay-net/webchat" target="_blank" rel="noopener" class="github-link" title="View on GitHub">
                             <svg height="24" width="24" viewBox="0 0 16 16" fill="currentColor">
                                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
@@ -30,7 +31,7 @@
                     </div>
                 </div>
             </header>
-            
+
             <main class="landing-content">
                 <section class="intro">
                     <p>
@@ -41,20 +42,58 @@
 
                 <section class="features">
                     <div class="feature">
-                        <h3>[E2E] End-to-End Encryption</h3>
-                        <p>Messages are encrypted in your browser. The server only sees encrypted data.</p>
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                        <div>
+                            <h3>End-to-End Encryption</h3>
+                            <p>AES-256-GCM with PBKDF2 key derivation. The server only ever sees ciphertext.</p>
+                        </div>
                     </div>
                     <div class="feature">
-                        <h3>[ANON] No Identity</h3>
-                        <p>No login, no account, no email. Completely anonymous.</p>
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        </div>
+                        <div>
+                            <h3>No Account Required</h3>
+                            <p>No login, no email, no phone number. Pick any alias per session and start talking.</p>
+                        </div>
                     </div>
                     <div class="feature">
-                        <h3>[PRIV] No Tracking</h3>
-                        <p>No cookies, no analytics, no external services.</p>
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </div>
+                        <div>
+                            <h3>Zero Tracking</h3>
+                            <p>No cookies, no analytics, no fingerprinting. Sessions auto-delete after one hour.</p>
+                        </div>
                     </div>
                     <div class="feature">
-                        <h3>[HOST] Self-Hosting</h3>
-                        <p>All code is open and can be self-hosted.</p>
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        </div>
+                        <div>
+                            <h3>Real-Time Delivery</h3>
+                            <p>Live typing indicators and instant message delivery with sound notifications.</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        </div>
+                        <div>
+                            <h3>Easy to Share</h3>
+                            <p>QR code and direct link per session. The other party needs no app or account.</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                        </div>
+                        <div>
+                            <h3>Self-Hostable</h3>
+                            <p>Fully open source. Runs on any PHP server — own your infrastructure.</p>
+                        </div>
                     </div>
                 </section>
 
@@ -70,6 +109,8 @@
                         <li>For maximum anonymity: use Tor Browser</li>
                         <li>No guarantees if your device is compromised</li>
                         <li>Password must be shared via a secure channel</li>
+                        <li>File uploads to 0x0.st are not encrypted</li>
+                        <li>Sessions expire automatically after 1 hour</li>
                     </ul>
                 </section>
             </main>
@@ -79,7 +120,6 @@
             </footer>
         </div>
 
-        
         <div id="create" class="page">
             <header>
                 <button class="btn-back" data-page="landing">&lt; Back</button>
@@ -91,20 +131,36 @@
                     <label for="session-id">Session ID</label>
                     <div class="input-with-action">
                         <input type="text" id="session-id" readonly>
-                        <button id="copy-session" class="btn-icon" title="Copy">[COPY]</button>
-                        <button id="regenerate-session" class="btn-icon" title="New ID">[NEW]</button>
+                        <button id="copy-session" class="btn-icon" title="Copy ID">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </button>
+                        <button id="copy-link" class="btn-icon" title="Copy join link">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>
+                        <button id="regenerate-session" class="btn-icon" title="Generate new ID">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        </button>
                     </div>
-                    <p class="hint">This ID identifies your chat. Share it with your conversation partners.</p>
+                    <p class="hint">Share the Session ID and password with your conversation partners.</p>
+                </div>
+
+                <div class="qr-container">
+                    <canvas id="qr-canvas"></canvas>
+                    <p class="qr-label">Scan to get the Session ID</p>
                 </div>
 
                 <div class="form-group">
                     <label for="create-password">Chat Password</label>
                     <input type="password" id="create-password" placeholder="Min. 8 characters" autocomplete="off" minlength="8">
+                    <div id="pw-strength-create" class="password-strength">
+                        <div class="strength-bar"><div class="strength-fill"></div></div>
+                        <span class="strength-label"></span>
+                    </div>
                     <p class="hint">The password is never sent to the server. It is used for encryption only.</p>
                 </div>
 
                 <div class="warning-box">
-                    <strong>Important:</strong> Both the Session ID and password are required to join the chat. 
+                    <strong>Important:</strong> Both the Session ID and password are required to join the chat.
                     There is no password recovery.
                 </div>
 
@@ -112,7 +168,6 @@
             </main>
         </div>
 
-        
         <div id="join" class="page">
             <header>
                 <button class="btn-back" data-page="landing">&lt; Back</button>
@@ -122,12 +177,16 @@
             <main class="join-content">
                 <div class="form-group">
                     <label for="join-session">Session ID</label>
-                    <input type="text" id="join-session" placeholder="Enter Session ID" autocomplete="off">
+                    <input type="text" id="join-session" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off" inputmode="text">
                 </div>
 
                 <div class="form-group">
                     <label for="join-password">Chat Password</label>
                     <input type="password" id="join-password" placeholder="Min. 8 characters" autocomplete="off" minlength="8">
+                    <div id="pw-strength-join" class="password-strength">
+                        <div class="strength-bar"><div class="strength-fill"></div></div>
+                        <span class="strength-label"></span>
+                    </div>
                 </div>
 
                 <p class="hint">
@@ -139,7 +198,6 @@
             </main>
         </div>
 
-        
         <div id="chat" class="page">
             <header class="chat-header">
                 <button class="btn-back" data-page="landing" id="btn-leave-chat">&lt; Leave</button>
@@ -148,6 +206,8 @@
                     <span id="chat-session-id" class="chat-session-value"></span>
                 </div>
                 <div class="chat-header-actions">
+                    <span id="session-timer" class="session-timer"></span>
+                    <button id="sound-toggle" class="btn-sound" title="Toggle sound"></button>
                     <button id="btn-delete-chat" class="btn-danger-small" title="Delete Chat">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3,6 5,6 21,6"/>
@@ -163,14 +223,26 @@
 
             <main class="chat-container">
                 <div id="messages" class="messages-container"></div>
-                
+
+                <div id="typing-indicator" class="typing-indicator hidden">
+                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                    <span>Someone is typing...</span>
+                </div>
+
+                <button id="scroll-to-bottom" class="scroll-to-bottom" title="Scroll to bottom">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+
                 <div class="alias-bar">
-                    <label for="local-alias">Local alias (only visible to you):</label>
-                    <input type="text" id="local-alias" placeholder="Anonymous" maxlength="20">
+                    <label for="local-alias">Your name:</label>
+                    <input type="text" id="local-alias" placeholder="Anonymous" maxlength="20" inputmode="text">
+                    <span id="msg-rate-counter" class="msg-rate-counter" title="Messages remaining this minute"></span>
                 </div>
 
                 <form id="message-form" class="message-form">
-                    <textarea id="message-input" placeholder="Enter message..." rows="1" disabled></textarea>
+                    <textarea id="message-input" placeholder="Enter message..." rows="1" disabled inputmode="text"></textarea>
                     <input type="file" id="file-input" accept="image/*,video/*,audio/*,.pdf,.txt,.zip" hidden>
                     <button type="button" id="btn-attach" class="btn-attach" disabled title="Attach file">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -187,16 +259,17 @@
 
             <div id="crypto-info" class="crypto-info">
                 <details>
-                    <summary>[ENCRYPTED] Encryption Status</summary>
+                    <summary>Encryption Details</summary>
                     <p>All messages are encrypted with AES-256-GCM.</p>
-                    <p>The key is derived locally from your password (PBKDF2).</p>
-                    <p>The server cannot read the content.</p>
+                    <p>The key is derived locally from your password (PBKDF2, 100k iterations).</p>
+                    <p>The server cannot read the content. Your alias is visible to other participants.</p>
                 </details>
             </div>
         </div>
     </div>
 
     <script src="js/crypto.js"></script>
+    <script src="js/qrcode.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

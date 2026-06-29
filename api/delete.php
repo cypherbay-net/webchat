@@ -21,6 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(10, 60, 'delete')) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Too many requests']);
+    exit;
+}
+
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 

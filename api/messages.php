@@ -15,6 +15,13 @@ if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
     }
 }
 
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(180, 60)) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Too many requests']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
@@ -38,7 +45,16 @@ if (!file_exists($sessionFile)) {
     exit;
 }
 
-$content = file_get_contents($sessionFile);
+$fp = fopen($sessionFile, 'r');
+if (!$fp) {
+    echo json_encode(['messages' => []]);
+    exit;
+}
+flock($fp, LOCK_SH);
+$content = stream_get_contents($fp);
+flock($fp, LOCK_UN);
+fclose($fp);
+
 $sessionData = json_decode($content, true);
 
 if (!$sessionData || !isset($sessionData['messages'])) {
@@ -52,4 +68,13 @@ $messages = array_filter($sessionData['messages'], function($msg) use ($since) {
 
 $messages = array_values($messages);
 
-echo json_encode(['messages' => $messages]);
+$response = ['messages' => $messages];
+
+if (isset($sessionData['typing'])) {
+    $typingAge = round(microtime(true) * 1000) - $sessionData['typing']['timestamp'];
+    if ($typingAge < 4000) {
+        $response['typing'] = $sessionData['typing'];
+    }
+}
+
+echo json_encode($response);

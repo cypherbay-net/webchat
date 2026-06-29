@@ -7,19 +7,51 @@
         password: null,
         cryptoKey: null,
         localAlias: 'Anonymous',
+        clientId: null,
         pollingInterval: null,
         lastMessageTimestamp: 0,
         sentMessageIds: new Set(),
-        connected: false
+        connected: false,
+        lastTypingSent: 0,
+        unreadCount: 0,
+        sessionStartTime: null,
+        sessionTimer: null,
+        soundEnabled: true,
+        darkMode: true,
+        originalTitle: 'CypherBay',
+        pollErrorCount: 0,
+        msgCount: 0,
+        msgWindowStart: 0
     };
 
+    const MSG_LIMIT = 40;
+
     const elements = {};
-    const POLL_INTERVAL = 1000;
+    const POLL_INTERVAL = 2500;
+    const SESSION_DURATION = 3600000;
+    const TYPING_INTERVAL = 2000;
+    const TYPING_DISPLAY_TIMEOUT = 3500;
 
     function init() {
+        loadTheme();
+        loadSoundPref();
         cacheElements();
         bindEvents();
+        updateThemeIcon();
+        updateSoundIcon();
+        checkUrlHash();
         showPage('landing');
+    }
+
+    function loadTheme() {
+        const saved = localStorage.getItem('cypherbay-theme');
+        state.darkMode = saved !== 'light';
+        document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
+    }
+
+    function loadSoundPref() {
+        const saved = localStorage.getItem('cypherbay-sound');
+        state.soundEnabled = saved !== 'false';
     }
 
     function cacheElements() {
@@ -29,24 +61,29 @@
             join: document.getElementById('join'),
             chat: document.getElementById('chat')
         };
-
         elements.btnCreate = document.getElementById('btn-create');
         elements.btnJoin = document.getElementById('btn-join');
-
+        elements.themeToggle = document.getElementById('theme-toggle');
         elements.sessionId = document.getElementById('session-id');
         elements.copySession = document.getElementById('copy-session');
+        elements.copyLink = document.getElementById('copy-link');
         elements.regenerateSession = document.getElementById('regenerate-session');
         elements.createPassword = document.getElementById('create-password');
         elements.btnStartChat = document.getElementById('btn-start-chat');
-
+        elements.qrCanvas = document.getElementById('qr-canvas');
+        elements.pwStrengthCreate = document.getElementById('pw-strength-create');
         elements.joinSession = document.getElementById('join-session');
         elements.joinPassword = document.getElementById('join-password');
         elements.btnJoinChat = document.getElementById('btn-join-chat');
-
+        elements.pwStrengthJoin = document.getElementById('pw-strength-join');
         elements.btnLeaveChat = document.getElementById('btn-leave-chat');
         elements.chatSessionId = document.getElementById('chat-session-id');
         elements.connectionStatus = document.getElementById('connection-status');
+        elements.sessionTimerEl = document.getElementById('session-timer');
+        elements.soundToggle = document.getElementById('sound-toggle');
         elements.messages = document.getElementById('messages');
+        elements.typingIndicator = document.getElementById('typing-indicator');
+        elements.scrollToBottomBtn = document.getElementById('scroll-to-bottom');
         elements.localAlias = document.getElementById('local-alias');
         elements.messageForm = document.getElementById('message-form');
         elements.messageInput = document.getElementById('message-input');
@@ -55,70 +92,95 @@
         elements.btnAttach = document.getElementById('btn-attach');
         elements.uploadProgress = document.getElementById('upload-progress');
         elements.btnDeleteChat = document.getElementById('btn-delete-chat');
-
+        elements.msgRateCounter = document.getElementById('msg-rate-counter');
         elements.backButtons = document.querySelectorAll('.btn-back');
+    }
+
+    function checkUrlHash() {
+        const hash = window.location.hash.slice(1);
+        if (hash && CypherCrypto.isValidSessionId(hash)) {
+            elements.joinSession.value = hash;
+            showPage('join');
+            window.history.replaceState(null, '', window.location.pathname);
+        }
     }
 
     function bindEvents() {
         elements.btnCreate.addEventListener('click', () => {
-            elements.sessionId.value = CypherCrypto.generateSessionId();
+            const id = CypherCrypto.generateSessionId();
+            elements.sessionId.value = id;
             elements.createPassword.value = '';
             elements.btnStartChat.disabled = true;
+            updatePasswordStrength('', elements.pwStrengthCreate);
             showPage('create');
+            renderQRCode(id);
         });
 
         elements.btnJoin.addEventListener('click', () => {
             elements.joinSession.value = '';
             elements.joinPassword.value = '';
             elements.btnJoinChat.disabled = true;
+            updatePasswordStrength('', elements.pwStrengthJoin);
             showPage('join');
         });
+
+        elements.themeToggle.addEventListener('click', toggleTheme);
 
         elements.copySession.addEventListener('click', () => {
             copyToClipboard(elements.sessionId.value);
         });
 
+        elements.copyLink.addEventListener('click', () => {
+            const url = window.location.origin + window.location.pathname + '#' + elements.sessionId.value;
+            copyToClipboard(url);
+        });
+
         elements.regenerateSession.addEventListener('click', () => {
-            elements.sessionId.value = CypherCrypto.generateSessionId();
+            const id = CypherCrypto.generateSessionId();
+            elements.sessionId.value = id;
+            renderQRCode(id);
         });
 
         elements.createPassword.addEventListener('input', () => {
-            elements.btnStartChat.disabled = elements.createPassword.value.length < 8;
+            const pw = elements.createPassword.value;
+            elements.btnStartChat.disabled = pw.length < 8;
+            updatePasswordStrength(pw, elements.pwStrengthCreate);
         });
 
         elements.btnStartChat.addEventListener('click', async () => {
             const sessionId = elements.sessionId.value;
             const password = elements.createPassword.value;
-            
-            if (sessionId && password) {
-                await enterChat(sessionId, password);
-            }
+            if (sessionId && password) await enterChat(sessionId, password);
         });
 
-        const validateJoinForm = () => {
-            const sessionId = elements.joinSession.value.trim();
-            const password = elements.joinPassword.value;
-            elements.btnJoinChat.disabled = !CypherCrypto.isValidSessionId(sessionId) || password.length < 8;
-        };
+        elements.joinSession.addEventListener('input', (e) => {
+            let clean = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+            let formatted = '';
+            for (let i = 0; i < clean.length; i++) {
+                if (i > 0 && i % 4 === 0) formatted += '-';
+                formatted += clean[i];
+            }
+            e.target.value = formatted;
+            validateJoinForm();
+        });
 
-        elements.joinSession.addEventListener('input', validateJoinForm);
-        elements.joinPassword.addEventListener('input', validateJoinForm);
+        elements.joinPassword.addEventListener('input', () => {
+            validateJoinForm();
+            updatePasswordStrength(elements.joinPassword.value, elements.pwStrengthJoin);
+        });
 
         elements.btnJoinChat.addEventListener('click', async () => {
             const sessionId = elements.joinSession.value.trim();
             const password = elements.joinPassword.value;
-            
             if (CypherCrypto.isValidSessionId(sessionId) && password) {
                 await enterChat(sessionId, password);
             }
         });
 
-        elements.btnLeaveChat.addEventListener('click', () => {
-            leaveChat();
-        });
+        elements.btnLeaveChat.addEventListener('click', leaveChat);
 
         elements.localAlias.addEventListener('input', () => {
-            state.localAlias = elements.localAlias.value.trim() || 'Anonym';
+            state.localAlias = elements.localAlias.value.trim() || 'Anonymous';
         });
 
         elements.messageForm.addEventListener('submit', async (e) => {
@@ -136,64 +198,133 @@
         elements.messageInput.addEventListener('input', () => {
             elements.messageInput.style.height = 'auto';
             elements.messageInput.style.height = Math.min(elements.messageInput.scrollHeight, 150) + 'px';
+            sendTypingSignal();
         });
 
-        elements.btnAttach.addEventListener('click', () => {
-            elements.fileInput.click();
-        });
+        elements.btnAttach.addEventListener('click', () => elements.fileInput.click());
 
         elements.fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (file) {
-                await uploadAndSendFile(file);
-                elements.fileInput.value = '';
-            }
+            if (file) { await uploadAndSendFile(file); elements.fileInput.value = ''; }
         });
 
-        elements.btnDeleteChat.addEventListener('click', async () => {
-            await showDeleteConfirmation();
+        elements.btnDeleteChat.addEventListener('click', () => showDeleteConfirmation());
+        elements.soundToggle.addEventListener('click', toggleSound);
+
+        elements.messages.addEventListener('scroll', () => {
+            const dist = elements.messages.scrollHeight - elements.messages.scrollTop - elements.messages.clientHeight;
+            elements.scrollToBottomBtn.classList.toggle('visible', dist > 100);
         });
+
+        elements.scrollToBottomBtn.addEventListener('click', scrollToBottom);
 
         elements.backButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                const targetPage = btn.getAttribute('data-page');
-                if (targetPage === 'landing' && state.currentPage === 'chat') {
-                    leaveChat();
-                } else {
-                    showPage(targetPage);
-                }
+                const target = btn.getAttribute('data-page');
+                if (target === 'landing' && state.currentPage === 'chat') leaveChat();
+                else showPage(target);
             });
         });
 
         document.addEventListener('visibilitychange', () => {
             if (state.currentPage === 'chat') {
-                if (document.hidden) {
-                    stopPolling();
-                } else {
+                if (document.hidden) { stopPolling(); }
+                else {
                     startPolling();
+                    state.unreadCount = 0;
+                    document.title = state.originalTitle;
                 }
             }
         });
     }
 
+    function validateJoinForm() {
+        const sid = elements.joinSession.value.trim();
+        const pw = elements.joinPassword.value;
+        elements.btnJoinChat.disabled = !CypherCrypto.isValidSessionId(sid) || pw.length < 8;
+    }
+
     function showPage(pageName) {
-        Object.values(elements.pages).forEach(page => {
-            page.classList.remove('active');
-        });
-        
+        Object.values(elements.pages).forEach(p => p.classList.remove('active'));
         if (elements.pages[pageName]) {
             elements.pages[pageName].classList.add('active');
             state.currentPage = pageName;
         }
     }
 
+    function toggleTheme() {
+        state.darkMode = !state.darkMode;
+        document.documentElement.setAttribute('data-theme', state.darkMode ? 'dark' : 'light');
+        localStorage.setItem('cypherbay-theme', state.darkMode ? 'dark' : 'light');
+        updateThemeIcon();
+    }
+
+    function updateThemeIcon() {
+        const svg = state.darkMode
+            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        elements.themeToggle.innerHTML = svg;
+    }
+
+    function toggleSound() {
+        state.soundEnabled = !state.soundEnabled;
+        localStorage.setItem('cypherbay-sound', String(state.soundEnabled));
+        updateSoundIcon();
+        showToast(state.soundEnabled ? 'Sound enabled' : 'Sound disabled');
+    }
+
+    function updateSoundIcon() {
+        const svg = state.soundEnabled
+            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>'
+            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+        elements.soundToggle.innerHTML = svg;
+    }
+
+    function updatePasswordStrength(pw, el) {
+        if (!el) return;
+        const s = getPasswordStrength(pw);
+        el.className = 'password-strength ' + s.cls;
+        el.querySelector('.strength-fill').style.width = (s.level / 3 * 100) + '%';
+        el.querySelector('.strength-label').textContent = s.text;
+    }
+
+    function getPasswordStrength(pw) {
+        if (!pw || pw.length < 8) return { level: 0, text: '', cls: '' };
+        let score = 0;
+        if (pw.length >= 8) score++;
+        if (pw.length >= 12) score++;
+        if (pw.length >= 16) score++;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw)) score++;
+        if (/[^a-zA-Z0-9]/.test(pw)) score++;
+        if (score <= 2) return { level: 1, text: 'Weak', cls: 'strength-weak' };
+        if (score <= 4) return { level: 2, text: 'Medium', cls: 'strength-medium' };
+        return { level: 3, text: 'Strong', cls: 'strength-strong' };
+    }
+
+    function renderQRCode(text) {
+        if (typeof QRCode !== 'undefined' && elements.qrCanvas) {
+            QRCode.render(elements.qrCanvas, text);
+        }
+    }
+
     async function enterChat(sessionId, password) {
+        const btn = state.currentPage === 'create' ? elements.btnStartChat : elements.btnJoinChat;
+        const originalText = btn.textContent;
+        btn.textContent = 'Connecting...';
+        btn.disabled = true;
         try {
             state.cryptoKey = await CypherCrypto.deriveKey(password, sessionId);
             state.sessionId = sessionId;
             state.password = password;
             state.lastMessageTimestamp = 0;
             state.sentMessageIds.clear();
+            state.clientId = CypherCrypto.generateMessageId();
+            state.unreadCount = 0;
+            state.sessionStartTime = Date.now();
+            state.pollErrorCount = 0;
+            state.msgCount = 0;
+            state.msgWindowStart = 0;
 
             elements.chatSessionId.textContent = sessionId;
             elements.messages.innerHTML = '';
@@ -201,160 +332,177 @@
             elements.messageInput.disabled = false;
             elements.btnSend.disabled = false;
             elements.btnAttach.disabled = false;
+            elements.typingIndicator.classList.add('hidden');
+            elements.scrollToBottomBtn.classList.remove('visible');
+            updateMsgRateCounter();
 
             showPage('chat');
-
-            addSystemMessage('Chat joined. All messages are encrypted.');
-
+            addSystemMessage('Chat joined. All messages are end-to-end encrypted.');
             startPolling();
+            startSessionTimer();
             updateConnectionStatus(true);
-
+            elements.messageInput.focus();
         } catch (error) {
-            console.error('Failed to enter chat:', error);
-            addSystemMessage('Error entering chat.');
+            btn.textContent = originalText;
+            btn.disabled = false;
+            showToast('Error connecting. Try again.');
         }
     }
 
     function leaveChat() {
         stopPolling();
+        stopSessionTimer();
         state.sessionId = null;
         state.password = null;
         state.cryptoKey = null;
+        state.clientId = null;
         state.lastMessageTimestamp = 0;
         state.sentMessageIds.clear();
         state.connected = false;
-
+        state.unreadCount = 0;
+        document.title = state.originalTitle;
         elements.messageInput.disabled = true;
         elements.btnSend.disabled = true;
         elements.btnAttach.disabled = true;
-
         showPage('landing');
+    }
+
+    function startSessionTimer() {
+        updateSessionTimer();
+        state.sessionTimer = setInterval(updateSessionTimer, 1000);
+    }
+
+    function stopSessionTimer() {
+        if (state.sessionTimer) { clearInterval(state.sessionTimer); state.sessionTimer = null; }
+    }
+
+    function updateSessionTimer() {
+        if (!state.sessionStartTime || !elements.sessionTimerEl) return;
+        const remaining = Math.max(0, SESSION_DURATION - (Date.now() - state.sessionStartTime));
+        const m = Math.floor(remaining / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        elements.sessionTimerEl.textContent = m + ':' + String(s).padStart(2, '0');
+        elements.sessionTimerEl.classList.toggle('timer-warning', remaining <= 300000);
+        if (remaining <= 0) {
+            addSystemMessage('Session expired.');
+            leaveChat();
+        }
+    }
+
+    async function sendTypingSignal() {
+        if (!state.cryptoKey || !state.sessionId) return;
+        const now = Date.now();
+        if (now - state.lastTypingSent < TYPING_INTERVAL) return;
+        state.lastTypingSent = now;
+        try {
+            const payload = await CypherCrypto.encrypt(
+                JSON.stringify({ clientId: state.clientId, t: now }), state.cryptoKey
+            );
+            fetch('api/send.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: state.sessionId, typing: payload })
+            });
+        } catch (e) {}
     }
 
     async function sendMessage() {
         const text = elements.messageInput.value.trim();
-        
-        if (!text || !state.cryptoKey || !state.sessionId) {
-            return;
+        if (!text || !state.cryptoKey || !state.sessionId) return;
+
+        const now = Date.now();
+        if (state.msgWindowStart && now - state.msgWindowStart >= 60000) {
+            state.msgCount = 0;
+            state.msgWindowStart = 0;
         }
 
         try {
             const messageId = CypherCrypto.generateMessageId();
-            
             const messageData = {
                 id: messageId,
+                alias: state.localAlias,
                 text: text,
-                timestamp: Date.now()
+                timestamp: now
             };
-
-            const encryptedPayload = await CypherCrypto.encrypt(JSON.stringify(messageData), state.cryptoKey);
-
+            const encrypted = await CypherCrypto.encrypt(JSON.stringify(messageData), state.cryptoKey);
             state.sentMessageIds.add(messageId);
-
             const response = await fetch('api/send.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    sessionId: state.sessionId,
-                    payload: encryptedPayload
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: state.sessionId, payload: encrypted })
             });
-
             if (response.ok) {
+                if (!state.msgWindowStart) state.msgWindowStart = now;
+                state.msgCount++;
+                updateMsgRateCounter();
                 displayMessage(messageData, true);
                 elements.messageInput.value = '';
                 elements.messageInput.style.height = 'auto';
+            } else if (response.status === 429) {
+                showToast('Rate limit — wait a moment');
             } else {
                 addSystemMessage('Message could not be sent.');
             }
-
         } catch (error) {
-            console.error('Failed to send message:', error);
             addSystemMessage('Error sending message.');
         }
     }
 
+    function updateMsgRateCounter() {
+        const el = elements.msgRateCounter;
+        if (!el) return;
+        const now = Date.now();
+        if (state.msgWindowStart && now - state.msgWindowStart >= 60000) {
+            state.msgCount = 0;
+            state.msgWindowStart = 0;
+        }
+        const remaining = MSG_LIMIT - state.msgCount;
+        el.textContent = remaining + '/' + MSG_LIMIT;
+        el.className = 'msg-rate-counter' +
+            (remaining <= 10 ? ' counter-warn' : '') +
+            (remaining <= 3 ? ' counter-danger' : '');
+    }
+
     async function uploadAndSendFile(file) {
-        const maxSize = 100 * 1024 * 1024;
-        if (file.size > maxSize) {
+        if (file.size > 100 * 1024 * 1024) {
             addSystemMessage('File too large. Max 100MB.');
             return;
         }
-
         const confirmed = await showUploadWarning(file.name);
-
-        if (!confirmed) {
-            return;
-        }
-
+        if (!confirmed) return;
         try {
             elements.uploadProgress.classList.remove('hidden');
             elements.btnAttach.disabled = true;
-
             const formData = new FormData();
             formData.append('file', file);
-
-            const response = await fetch('api/upload.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            const responseText = await response.text();
-
-            if (!response.ok) {
-                throw new Error('Upload failed: ' + responseText);
-            }
-
+            const response = await fetch('api/upload.php', { method: 'POST', body: formData });
+            const text = await response.text();
+            if (!response.ok) throw new Error(text);
             let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (e) {
-                throw new Error('Invalid JSON: ' + responseText);
-            }
-
-            if (!result.success || !result.url) {
-                throw new Error(result.error || 'Upload failed');
-            }
-
-            const trimmedUrl = result.url;
+            try { result = JSON.parse(text); } catch (e) { throw new Error(text); }
+            if (!result.success || !result.url) throw new Error(result.error || 'Upload failed');
 
             const messageId = CypherCrypto.generateMessageId();
-            const fileType = getFileType(file.type);
-
             const messageData = {
                 id: messageId,
+                alias: state.localAlias,
                 type: 'file',
-                fileType: fileType,
+                fileType: getFileType(file.type),
                 fileName: file.name,
                 fileSize: file.size,
-                url: trimmedUrl,
+                url: result.url,
                 timestamp: Date.now()
             };
-
-            const encryptedPayload = await CypherCrypto.encrypt(JSON.stringify(messageData), state.cryptoKey);
+            const encrypted = await CypherCrypto.encrypt(JSON.stringify(messageData), state.cryptoKey);
             state.sentMessageIds.add(messageId);
-
-            const sendResponse = await fetch('api/send.php', {
+            const sendResp = await fetch('api/send.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    sessionId: state.sessionId,
-                    payload: encryptedPayload
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: state.sessionId, payload: encrypted })
             });
-
-            if (sendResponse.ok) {
-                displayMessage(messageData, true);
-            } else {
-                addSystemMessage('Could not send file message.');
-            }
-
+            if (sendResp.ok) displayMessage(messageData, true);
+            else addSystemMessage('Could not send file message.');
         } catch (error) {
-            console.error('Upload failed:', error);
             addSystemMessage('File upload failed.');
         } finally {
             elements.uploadProgress.classList.add('hidden');
@@ -362,10 +510,10 @@
         }
     }
 
-    function getFileType(mimeType) {
-        if (mimeType.startsWith('image/')) return 'image';
-        if (mimeType.startsWith('video/')) return 'video';
-        if (mimeType.startsWith('audio/')) return 'audio';
+    function getFileType(mime) {
+        if (mime.startsWith('image/')) return 'image';
+        if (mime.startsWith('video/')) return 'video';
+        if (mime.startsWith('audio/')) return 'audio';
         return 'file';
     }
 
@@ -375,189 +523,185 @@
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 
+    function isSafeUrl(url) {
+        try { const p = new URL(url); return p.protocol === 'https:' || p.protocol === 'http:'; }
+        catch { return false; }
+    }
+
     function startPolling() {
-        if (state.pollingInterval) {
-            return;
-        }
-
+        if (state.pollingInterval) return;
         fetchMessages();
-
-        state.pollingInterval = setInterval(fetchMessages, POLL_INTERVAL);
+        state.pollingInterval = setInterval(() => {
+            if (state.pollErrorCount > 3) {
+                if (state.pollErrorCount % 3 !== 0) return;
+            }
+            fetchMessages();
+        }, POLL_INTERVAL);
     }
 
     function stopPolling() {
-        if (state.pollingInterval) {
-            clearInterval(state.pollingInterval);
-            state.pollingInterval = null;
-        }
+        if (state.pollingInterval) { clearInterval(state.pollingInterval); state.pollingInterval = null; }
     }
 
     async function fetchMessages() {
-        if (!state.sessionId || !state.cryptoKey) {
-            return;
-        }
-
+        if (!state.sessionId || !state.cryptoKey) return;
         try {
-            const response = await fetch(`api/messages.php?sessionId=${encodeURIComponent(state.sessionId)}&since=${state.lastMessageTimestamp}`);
-            
-            if (!response.ok) {
-                updateConnectionStatus(false);
-                return;
-            }
-
+            const resp = await fetch('api/messages.php?sessionId=' + encodeURIComponent(state.sessionId) + '&since=' + state.lastMessageTimestamp);
+            if (!resp.ok) { updateConnectionStatus(false); state.pollErrorCount++; return; }
+            state.pollErrorCount = 0;
             updateConnectionStatus(true);
-
-            const data = await response.json();
-            
+            const data = await resp.json();
             if (data.messages && data.messages.length > 0) {
-                for (const msg of data.messages) {
-                    await processMessage(msg);
+                for (const msg of data.messages) await processMessage(msg);
+            }
+            if (data.typing) await processTyping(data.typing);
+            else elements.typingIndicator.classList.add('hidden');
+        } catch (error) {
+            updateConnectionStatus(false);
+            state.pollErrorCount++;
+        }
+    }
+
+    async function processTyping(typing) {
+        try {
+            const dec = await CypherCrypto.decrypt(typing.payload, state.cryptoKey);
+            if (dec) {
+                const d = JSON.parse(dec);
+                if (d.clientId !== state.clientId && (Date.now() - typing.timestamp) < TYPING_DISPLAY_TIMEOUT) {
+                    elements.typingIndicator.classList.remove('hidden');
+                    return;
                 }
             }
-
-        } catch (error) {
-            console.error('Failed to fetch messages:', error);
-            updateConnectionStatus(false);
-        }
+        } catch (e) {}
+        elements.typingIndicator.classList.add('hidden');
     }
 
     async function processMessage(msg) {
         try {
-            if (msg.timestamp > state.lastMessageTimestamp) {
-                state.lastMessageTimestamp = msg.timestamp;
-            }
-
-            const decrypted = await CypherCrypto.decrypt(msg.payload, state.cryptoKey);
-            
-            if (decrypted) {
-                const messageData = JSON.parse(decrypted);
-                
-                if (state.sentMessageIds.has(messageData.id)) {
-                    return;
-                }
-
+            if (msg.timestamp > state.lastMessageTimestamp) state.lastMessageTimestamp = msg.timestamp;
+            const dec = await CypherCrypto.decrypt(msg.payload, state.cryptoKey);
+            if (dec) {
+                const messageData = JSON.parse(dec);
+                if (state.sentMessageIds.has(messageData.id)) return;
                 displayMessage(messageData, false);
+                if (document.hidden) {
+                    state.unreadCount++;
+                    document.title = '(' + state.unreadCount + ') ' + state.originalTitle;
+                    if (state.soundEnabled) playNotificationSound();
+                }
             } else {
                 displayEncryptionError(msg.timestamp);
             }
-
         } catch (error) {
             displayEncryptionError(msg.timestamp);
         }
     }
 
     function displayMessage(messageData, isSent) {
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${isSent ? 'sent' : 'received'}`;
+        const el = document.createElement('div');
+        el.className = 'message ' + (isSent ? 'sent' : 'received') + ' message-appear';
 
-        const contentEl = document.createElement('div');
-        contentEl.className = 'message-content';
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        if (messageData.type === 'file') content.appendChild(createFileContent(messageData));
+        else content.textContent = messageData.text;
 
-        if (messageData.type === 'file') {
-            contentEl.appendChild(createFileContent(messageData));
-        } else {
-            contentEl.textContent = messageData.text;
-        }
+        const meta = document.createElement('div');
+        meta.className = 'message-meta';
 
-        const metaEl = document.createElement('div');
-        metaEl.className = 'message-meta';
-        
-        const timeEl = document.createElement('span');
-        timeEl.textContent = formatTime(messageData.timestamp);
-        
-        metaEl.appendChild(timeEl);
+        const alias = document.createElement('span');
+        alias.className = 'message-alias';
+        alias.textContent = isSent ? state.localAlias : (messageData.alias || 'Anonymous');
+        meta.appendChild(alias);
 
-        if (isSent) {
-            const aliasEl = document.createElement('span');
-            aliasEl.textContent = state.localAlias;
-            metaEl.insertBefore(aliasEl, timeEl);
-        }
+        const time = document.createElement('span');
+        time.textContent = formatTime(messageData.timestamp);
+        meta.appendChild(time);
 
-        messageEl.appendChild(contentEl);
-        messageEl.appendChild(metaEl);
-
-        elements.messages.appendChild(messageEl);
-        scrollToBottom();
+        el.appendChild(content);
+        el.appendChild(meta);
+        elements.messages.appendChild(el);
+        scrollToBottom(isSent);
     }
 
     function createFileContent(messageData) {
         const container = document.createElement('div');
         container.className = 'file-content';
+        const safeUrl = isSafeUrl(messageData.url) ? messageData.url : '';
 
         if (messageData.fileType === 'image') {
             const img = document.createElement('img');
-            img.src = messageData.url;
+            img.src = safeUrl;
             img.alt = messageData.fileName;
             img.className = 'message-image';
             img.loading = 'lazy';
-            img.addEventListener('click', () => window.open(messageData.url, '_blank'));
+            img.addEventListener('click', () => { if (safeUrl) window.open(safeUrl, '_blank'); });
             container.appendChild(img);
         } else if (messageData.fileType === 'video') {
             const video = document.createElement('video');
-            video.src = messageData.url;
+            video.src = safeUrl;
             video.controls = true;
             video.className = 'message-video';
             video.preload = 'metadata';
             container.appendChild(video);
         } else if (messageData.fileType === 'audio') {
             const audio = document.createElement('audio');
-            audio.src = messageData.url;
+            audio.src = safeUrl;
             audio.controls = true;
             audio.className = 'message-audio';
             container.appendChild(audio);
         } else {
-            const fileLink = document.createElement('a');
-            fileLink.href = messageData.url;
-            fileLink.target = '_blank';
-            fileLink.rel = 'noopener';
-            fileLink.className = 'file-link';
-            fileLink.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                </svg>
-                <span class="file-info">
-                    <span class="file-name">${messageData.fileName}</span>
-                    <span class="file-size">${formatFileSize(messageData.fileSize)}</span>
-                </span>
-            `;
-            container.appendChild(fileLink);
+            const link = document.createElement('a');
+            if (safeUrl) link.href = safeUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.className = 'file-link';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
+            svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2');
+            const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            p.setAttribute('d', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z');
+            const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            pl.setAttribute('points', '14,2 14,8 20,8');
+            svg.appendChild(p); svg.appendChild(pl);
+            const info = document.createElement('span'); info.className = 'file-info';
+            const nameEl = document.createElement('span'); nameEl.className = 'file-name';
+            nameEl.textContent = messageData.fileName;
+            const sizeEl = document.createElement('span'); sizeEl.className = 'file-size';
+            sizeEl.textContent = formatFileSize(messageData.fileSize);
+            info.appendChild(nameEl); info.appendChild(sizeEl);
+            link.appendChild(svg); link.appendChild(info);
+            container.appendChild(link);
         }
-
         return container;
     }
 
     function displayEncryptionError(timestamp) {
-        const messageEl = document.createElement('div');
-        messageEl.className = 'message received';
-
-        const contentEl = document.createElement('div');
-        contentEl.className = 'message-content message-error';
-        contentEl.textContent = '[Message could not be decrypted - wrong password?]';
-
-        const metaEl = document.createElement('div');
-        metaEl.className = 'message-meta';
-        metaEl.textContent = formatTime(timestamp);
-
-        messageEl.appendChild(contentEl);
-        messageEl.appendChild(metaEl);
-
-        elements.messages.appendChild(messageEl);
+        const el = document.createElement('div');
+        el.className = 'message received message-appear';
+        const content = document.createElement('div');
+        content.className = 'message-content message-error';
+        content.textContent = '[Message could not be decrypted - wrong password?]';
+        const meta = document.createElement('div');
+        meta.className = 'message-meta';
+        meta.textContent = formatTime(timestamp);
+        el.appendChild(content); el.appendChild(meta);
+        elements.messages.appendChild(el);
         scrollToBottom();
     }
 
     function addSystemMessage(text) {
-        const messageEl = document.createElement('div');
-        messageEl.className = 'system-message';
-        messageEl.textContent = text;
-        elements.messages.appendChild(messageEl);
-        scrollToBottom();
+        const el = document.createElement('div');
+        el.className = 'system-message message-appear';
+        el.textContent = text;
+        elements.messages.appendChild(el);
+        scrollToBottom(true);
     }
 
     function updateConnectionStatus(connected) {
         state.connected = connected;
         elements.connectionStatus.classList.remove('connected', 'disconnected');
-        
         if (connected) {
             elements.connectionStatus.classList.add('connected');
             elements.connectionStatus.querySelector('.status-text').textContent = 'Connected';
@@ -567,93 +711,55 @@
         }
     }
 
+    function playNotificationSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 800; osc.type = 'sine'; gain.gain.value = 0.1;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.stop(ctx.currentTime + 0.3);
+        } catch (e) {}
+    }
+
     async function copyToClipboard(text) {
         try {
             await navigator.clipboard.writeText(text);
             showToast('Copied!');
         } catch (error) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
             showToast('Copied!');
         }
     }
 
     function showToast(message) {
         let toast = document.querySelector('.toast');
-        
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.className = 'toast';
-            document.body.appendChild(toast);
-        }
-
+        if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
         toast.textContent = message;
         toast.classList.add('show');
-
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2000);
+        setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
     function showUploadWarning(fileName) {
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay';
-
             const modal = document.createElement('div');
             modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-header">
-                    <span class="modal-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </span>
-                    <h3>File Upload Warning</h3>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-filename">${fileName}</p>
-                    <ul class="modal-warnings">
-                        <li>The file will be uploaded to an external server (0x0.st)</li>
-                        <li>The file itself is <strong>NOT encrypted</strong></li>
-                        <li>Only the link in the chat is encrypted</li>
-                        <li>Anyone with the link can access the file</li>
-                    </ul>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-secondary modal-cancel">Cancel</button>
-                    <button class="btn-primary modal-confirm">Upload</button>
-                </div>
-            `;
-
+            modal.innerHTML = '<div class="modal-header"><span class="modal-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><h3>File Upload Warning</h3></div><div class="modal-body"><p class="modal-filename"></p><ul class="modal-warnings"><li>The file will be uploaded to an external server (0x0.st)</li><li>The file itself is <strong>NOT encrypted</strong></li><li>Only the link in the chat is encrypted</li><li>Anyone with the link can access the file</li></ul></div><div class="modal-actions"><button class="btn-secondary modal-cancel">Cancel</button><button class="btn-primary modal-confirm">Upload</button></div>';
+            modal.querySelector('.modal-filename').textContent = fileName;
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
-
-            requestAnimationFrame(() => {
-                overlay.classList.add('show');
-            });
-
-            const cleanup = (result) => {
-                overlay.classList.remove('show');
-                setTimeout(() => {
-                    overlay.remove();
-                }, 200);
-                resolve(result);
-            };
-
+            requestAnimationFrame(() => overlay.classList.add('show'));
+            const cleanup = (r) => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); resolve(r); };
             modal.querySelector('.modal-cancel').addEventListener('click', () => cleanup(false));
             modal.querySelector('.modal-confirm').addEventListener('click', () => cleanup(true));
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) cleanup(false);
-            });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(false); });
         });
     }
 
@@ -661,126 +767,50 @@
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay';
-
             const modal = document.createElement('div');
             modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-header">
-                    <span class="modal-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3,6 5,6 21,6"/>
-                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
-                            <line x1="10" y1="11" x2="10" y2="17"/>
-                            <line x1="14" y1="11" x2="14" y2="17"/>
-                        </svg>
-                    </span>
-                    <h3>Delete Chat</h3>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-text">This will permanently delete all messages in this chat session.</p>
-                    <div class="form-group">
-                        <label for="delete-password">Enter chat password to confirm:</label>
-                        <input type="password" id="delete-password" placeholder="Password" autocomplete="off">
-                    </div>
-                    <p class="modal-error hidden" id="delete-error"></p>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn-secondary modal-cancel">Cancel</button>
-                    <button class="btn-danger modal-delete">Delete Chat</button>
-                </div>
-            `;
-
+            modal.innerHTML = '<div class="modal-header"><span class="modal-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span><h3>Delete Chat</h3></div><div class="modal-body"><p class="modal-text">This will permanently delete all messages in this chat session.</p><div class="form-group"><label for="delete-password">Enter chat password to confirm:</label><input type="password" id="delete-password" placeholder="Password" autocomplete="off"></div><p class="modal-error hidden" id="delete-error"></p></div><div class="modal-actions"><button class="btn-secondary modal-cancel">Cancel</button><button class="btn-danger modal-delete">Delete Chat</button></div>';
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
-
-            const passwordInput = modal.querySelector('#delete-password');
-            const errorEl = modal.querySelector('#delete-error');
-            const deleteBtn = modal.querySelector('.modal-delete');
-
-            requestAnimationFrame(() => {
-                overlay.classList.add('show');
-                passwordInput.focus();
-            });
-
-            const cleanup = () => {
-                overlay.classList.remove('show');
-                setTimeout(() => {
-                    overlay.remove();
-                }, 200);
-                resolve();
-            };
-
+            const pwInput = modal.querySelector('#delete-password');
+            const errEl = modal.querySelector('#delete-error');
+            const delBtn = modal.querySelector('.modal-delete');
+            requestAnimationFrame(() => { overlay.classList.add('show'); pwInput.focus(); });
+            const cleanup = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); resolve(); };
             const attemptDelete = async () => {
-                const enteredPassword = passwordInput.value;
-                
-                if (!enteredPassword) {
-                    errorEl.textContent = 'Please enter the password';
-                    errorEl.classList.remove('hidden');
-                    return;
-                }
-
-                if (enteredPassword !== state.password) {
-                    errorEl.textContent = 'Incorrect password';
-                    errorEl.classList.remove('hidden');
-                    passwordInput.value = '';
-                    return;
-                }
-
-                deleteBtn.disabled = true;
-                deleteBtn.textContent = 'Deleting...';
-
+                const pw = pwInput.value;
+                if (!pw) { errEl.textContent = 'Please enter the password'; errEl.classList.remove('hidden'); return; }
+                if (pw !== state.password) { errEl.textContent = 'Incorrect password'; errEl.classList.remove('hidden'); pwInput.value = ''; return; }
+                delBtn.disabled = true; delBtn.textContent = 'Deleting...';
                 try {
-                    const response = await fetch('api/delete.php', {
+                    const resp = await fetch('api/delete.php', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            sessionId: state.sessionId
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionId: state.sessionId })
                     });
-
-                    if (response.ok) {
-                        cleanup();
-                        leaveChat();
-                        showToast('Chat deleted');
-                    } else {
-                        errorEl.textContent = 'Failed to delete chat';
-                        errorEl.classList.remove('hidden');
-                        deleteBtn.disabled = false;
-                        deleteBtn.textContent = 'Delete Chat';
-                    }
-                } catch (error) {
-                    errorEl.textContent = 'Error deleting chat';
-                    errorEl.classList.remove('hidden');
-                    deleteBtn.disabled = false;
-                    deleteBtn.textContent = 'Delete Chat';
-                }
+                    if (resp.ok) { cleanup(); leaveChat(); showToast('Chat deleted'); }
+                    else { errEl.textContent = 'Failed to delete chat'; errEl.classList.remove('hidden'); delBtn.disabled = false; delBtn.textContent = 'Delete Chat'; }
+                } catch (e) { errEl.textContent = 'Error deleting chat'; errEl.classList.remove('hidden'); delBtn.disabled = false; delBtn.textContent = 'Delete Chat'; }
             };
-
             modal.querySelector('.modal-cancel').addEventListener('click', cleanup);
-            deleteBtn.addEventListener('click', attemptDelete);
-            passwordInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') attemptDelete();
-            });
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) cleanup();
-            });
+            delBtn.addEventListener('click', attemptDelete);
+            pwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptDelete(); });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(); });
         });
     }
 
-    function formatTime(timestamp) {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    function formatTime(ts) {
+        return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
-    function scrollToBottom() {
-        elements.messages.scrollTop = elements.messages.scrollHeight;
+    function scrollToBottom(force = false) {
+        const m = elements.messages;
+        const dist = m.scrollHeight - m.scrollTop - m.clientHeight;
+        if (force || dist < 120) {
+            m.scrollTop = m.scrollHeight;
+        }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 })();

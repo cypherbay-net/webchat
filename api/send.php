@@ -24,14 +24,30 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (!$data || !isset($data['sessionId']) || !isset($data['payload'])) {
+if (!$data || !isset($data['sessionId'])) {
     http_response_code(400);
     echo json_encode(['error' => 'Invalid request']);
     exit;
 }
 
 $sessionId = $data['sessionId'];
-$payload = $data['payload'];
+$isTyping = isset($data['typing']) && is_string($data['typing']);
+
+if (!$isTyping) {
+    require_once __DIR__ . '/ratelimit.php';
+    if (!enforceRateLimit(40, 60)) {
+        http_response_code(429);
+        echo json_encode(['error' => 'Too many requests']);
+        exit;
+    }
+}
+$payload = isset($data['payload']) ? $data['payload'] : null;
+
+if (!$isTyping && !$payload) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid request']);
+    exit;
+}
 
 if (!preg_match('/^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/', $sessionId)) {
     http_response_code(400);
@@ -39,9 +55,15 @@ if (!preg_match('/^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/', $sessionI
     exit;
 }
 
-if (!is_string($payload) || strlen($payload) > 100000) {
+if (!$isTyping && (!is_string($payload) || strlen($payload) > 100000)) {
     http_response_code(400);
     echo json_encode(['error' => 'Invalid payload']);
+    exit;
+}
+
+if ($isTyping && strlen($data['typing']) > 5000) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid typing data']);
     exit;
 }
 
@@ -67,36 +89,41 @@ if (!flock($fp, LOCK_EX)) {
     exit;
 }
 
-$messages = [];
+$sessionData = ['messages' => [], 'lastActivity' => time()];
 $content = stream_get_contents($fp);
 if ($content) {
-    $sessionData = json_decode($content, true);
-    if ($sessionData && isset($sessionData['messages'])) {
-        $messages = $sessionData['messages'];
+    $saved = json_decode($content, true);
+    if ($saved !== null && is_array($saved)) {
+        $sessionData = array_merge($sessionData, $saved);
+        if (!is_array($sessionData['messages'])) {
+            $sessionData['messages'] = [];
+        }
     }
 }
 
-$message = [
-    'payload' => $payload,
-    'timestamp' => round(microtime(true) * 1000)
-];
+if ($isTyping) {
+    $sessionData['typing'] = [
+        'payload' => $data['typing'],
+        'timestamp' => round(microtime(true) * 1000)
+    ];
+} else {
+    $message = [
+        'payload' => $payload,
+        'timestamp' => round(microtime(true) * 1000)
+    ];
+    $sessionData['messages'][] = $message;
 
-$messages[] = $message;
+    if (count($sessionData['messages']) > 100) {
+        $sessionData['messages'] = array_slice($sessionData['messages'], -100);
+    }
 
-if (count($messages) > 100) {
-    $messages = array_slice($messages, -100);
+    $oneHourAgo = (microtime(true) * 1000) - (3600 * 1000);
+    $sessionData['messages'] = array_values(array_filter($sessionData['messages'], function($msg) use ($oneHourAgo) {
+        return $msg['timestamp'] > $oneHourAgo;
+    }));
 }
 
-$oneHourAgo = (microtime(true) * 1000) - (3600 * 1000);
-$messages = array_filter($messages, function($msg) use ($oneHourAgo) {
-    return $msg['timestamp'] > $oneHourAgo;
-});
-$messages = array_values($messages);
-
-$sessionData = [
-    'messages' => $messages,
-    'lastActivity' => time()
-];
+$sessionData['lastActivity'] = time();
 
 ftruncate($fp, 0);
 rewind($fp);
@@ -105,4 +132,8 @@ fflush($fp);
 flock($fp, LOCK_UN);
 fclose($fp);
 
-echo json_encode(['success' => true, 'timestamp' => $message['timestamp']]);
+if ($isTyping) {
+    echo json_encode(['success' => true]);
+} else {
+    echo json_encode(['success' => true, 'timestamp' => $message['timestamp']]);
+}
