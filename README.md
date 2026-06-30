@@ -1,37 +1,43 @@
 # CypherBay
 
 <p align="center">
-  <strong>Anonymous, end-to-end encrypted web chat, no accounts, no logs</strong>
+  <strong>Anonymous, end-to-end encrypted web chat — no accounts, no logs</strong>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/cypherbay-net/webchat?color=39ff14&style=flat-square" alt="MIT"></a>
   <img src="https://img.shields.io/badge/PHP-7.4+-39ff14?style=flat-square">
   <img src="https://img.shields.io/badge/Crypto-AES--256--GCM-39ff14?style=flat-square">
+  <img src="https://img.shields.io/badge/PBKDF2-310%2C000_iter-39ff14?style=flat-square">
   <img src="https://img.shields.io/badge/dependencies-zero-39ff14?style=flat-square">
 </p>
 
 ---
 
-CypherBay is a self-hosted, browser-based chat. No registration, no persistent accounts. Open a session, share the ID and a password out-of-band, and the conversation stays between you. The server stores only ciphertext it cannot read. Sessions auto-expire after one hour.
+CypherBay is a self-hosted, browser-based chat. No registration, no persistent accounts. Open a session, share the ID and a password out-of-band, and the conversation stays between you. The server stores only ciphertext it cannot read. Sessions and uploaded files auto-expire after one hour and seven days respectively.
 
 ## Crypto
 
-Encryption runs entirely in the browser via the Web Crypto API. Keys are derived with PBKDF2-SHA256 at 100 000 iterations, keyed on the concatenation of your password and the session ID. Each message is encrypted with AES-256-GCM using a fresh random 96-bit IV. What gets sent to the server is `base64(IV ‖ ciphertext)`. The password never leaves the client.
+All encryption runs entirely in the browser via the Web Crypto API — no crypto library, no server-side keys.
+
+**Messages:** Keys are derived with PBKDF2-SHA256 at 310,000 iterations, salted with `CypherBay-v2-<sessionId>`. Each message is encrypted with AES-256-GCM using a fresh random 96-bit IV. What reaches the server is `base64(IV ‖ ciphertext)`. The password never leaves the client.
+
+**Files:** Before upload, files are encrypted in the browser with the same AES-256-GCM session key. The server receives and stores an opaque binary blob — no filename, no MIME type, no readable content. Decryption happens in the receiver's browser. Anyone with a direct file URL sees random bytes.
 
 ## Limitations
 
-The server sees your IP address and connection timestamps. If real anonymity matters, use Tor Browser. The session ID and password have to be shared through a separate channel; sending the password in the chat itself defeats the purpose. File uploads go to [0x0.st](https://0x0.st) unencrypted; only the link is encrypted in the chat. This is not a replacement for Signal.
+The server sees your IP address and connection timestamps. If real anonymity matters, use Tor Browser. The session ID and password must be shared through a separate channel — sending the password in the chat defeats the purpose. This is not a replacement for Signal.
 
 ## Setup
 
-Requires PHP 7.4+ with `allow_url_fopen` enabled and any web server. HTTPS is required in production. The API endpoints reject plain HTTP.
+Requires PHP 7.4+ and any web server. HTTPS is required; the API endpoints reject plain HTTP.
 
 ```bash
 git clone https://github.com/cypherbay-net/webchat.git cypherbay
 cd cypherbay
-mkdir -p data/sessions data/ratelimit
+mkdir -p data/sessions data/ratelimit data/uploads
 chmod 700 data/sessions data/ratelimit
+chmod 755 data/uploads
 php -S localhost:8000
 ```
 
@@ -75,40 +81,47 @@ server {
 </VirtualHost>
 ```
 
-Add a cron job to clean up expired sessions, otherwise they accumulate on disk:
+Add a cron job to clean up expired sessions:
 
 ```bash
 */5 * * * * php /var/www/cypherbay/api/cleanup.php > /dev/null 2>&1
 ```
 
+Uploaded files older than 7 days are deleted automatically on each new upload. No separate cron needed.
+
 ## Rate limiting
 
-Per-IP, fixed 60-second windows written to `data/ratelimit/`. Typing signals are not rate-limited.
+Per-IP, fixed 60-second windows written to `data/ratelimit/`. Typing signals are excluded.
 
 | Endpoint | Limit |
 |---|---|
 | `api/send.php` | 40 / min |
 | `api/messages.php` | 180 / min |
+| `api/upload.php` | 5 / min |
+| `api/delete.php` | 10 / min |
 
 ## Structure
 
 ```
 cypherbay/
 ├── index.html
+├── changelog.html
 ├── css/style.css
 ├── js/
-│   ├── app.js          — UI, polling, message handling
+│   ├── app.js          — UI, polling, message handling, file encryption
 │   ├── crypto.js       — PBKDF2 + AES-256-GCM via Web Crypto API
-│   └── qrcode.js       — QR code renderer (no dependencies, QR v1)
+│   └── qrcode.js       — QR code renderer (alphanumeric + byte mode, no deps)
 ├── api/
 │   ├── send.php        — store encrypted message or typing signal
 │   ├── messages.php    — fetch messages since timestamp
-│   ├── upload.php      — proxy file upload to 0x0.st
+│   ├── upload.php      — store encrypted file blob locally
+│   ├── file.php        — serve encrypted file blob by ID
 │   ├── delete.php      — delete a session
 │   ├── cleanup.php     — CLI: remove expired sessions
 │   └── ratelimit.php   — file-based per-IP rate limiter
 └── data/
-    ├── sessions/       — one JSON file per active session
+    ├── sessions/       — one JSON file per active session (auto-expire 1h)
+    ├── uploads/        — encrypted file blobs (auto-expire 7d)
     └── ratelimit/      — one JSON file per IP per endpoint
 ```
 
@@ -121,7 +134,19 @@ encrypt(msg, key)  ──────────► store ciphertext ◄──�
                                (cannot decrypt)  ──────► decrypt(msg, key)
 ```
 
-The server is a dumb relay. It stores `{payload, timestamp}` tuples per session and returns them on request. There is no concept of users, rooms, or message ordering beyond timestamps.
+## How file sharing works
+
+```
+Browser A                           Server                      Browser B
+────────────────────────────────────────────────────────────────────────
+encrypt(file, key) ───── encrypted blob ──────► store opaque blob
+send URL in message ────────────────────────────────────────────────►
+                                                fetch blob ──────────►
+                                                decrypt(blob, key) ──►
+                                                display inline
+```
+
+The server is a dumb relay. It never sees plaintext — not for messages, not for files.
 
 ## License
 
