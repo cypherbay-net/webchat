@@ -1,7 +1,7 @@
 # CypherBay
 
 <p align="center">
-  <strong>Anonymous, end-to-end encrypted web chat — no accounts, no logs</strong>
+  <strong>Anonymous, end-to-end encrypted web chat, no accounts, no logs</strong>
 </p>
 
 <p align="center">
