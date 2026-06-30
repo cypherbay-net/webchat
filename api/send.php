@@ -35,7 +35,7 @@ $isTyping = isset($data['typing']) && is_string($data['typing']);
 
 if (!$isTyping) {
     require_once __DIR__ . '/ratelimit.php';
-    if (!enforceRateLimit(40, 60)) {
+    if (!enforceRateLimit(80, 60, 'send')) {
         http_response_code(429);
         echo json_encode(['error' => 'Too many requests']);
         exit;
@@ -80,7 +80,13 @@ if (!is_dir($dataDir)) {
 
 $sessionFile = $dataDir . '/' . $sessionId . '.json';
 
-$fp = @fopen($sessionFile, 'c+');
+if (!file_exists($sessionFile)) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Session not found']);
+    exit;
+}
+
+$fp = @fopen($sessionFile, 'r+');
 if (!$fp) {
     http_response_code(500);
     echo json_encode(['error' => 'Server error']);

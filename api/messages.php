@@ -16,7 +16,7 @@ if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
 }
 
 require_once __DIR__ . '/ratelimit.php';
-if (!enforceRateLimit(180, 60)) {
+if (!enforceRateLimit(300, 60, 'messages')) {
     http_response_code(429);
     echo json_encode(['error' => 'Too many requests']);
     exit;
@@ -41,7 +41,8 @@ $dataDir = __DIR__ . '/../data/sessions';
 $sessionFile = $dataDir . '/' . $sessionId . '.json';
 
 if (!file_exists($sessionFile)) {
-    echo json_encode(['messages' => []]);
+    http_response_code(404);
+    echo json_encode(['error' => 'Session not found']);
     exit;
 }
 

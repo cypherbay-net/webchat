@@ -24,7 +24,7 @@
         msgWindowStart: 0
     };
 
-    const MSG_LIMIT = 40;
+    const MSG_LIMIT = 80;
 
     const elements = {};
     const POLL_INTERVAL = 2500;
@@ -123,6 +123,11 @@
     }
 
     function bindEvents() {
+        document.addEventListener('click', function() {
+            const ctx = _getAudioCtx();
+            if (ctx && ctx.state === 'suspended') ctx.resume();
+        }, { once: true });
+
         elements.btnCreate.addEventListener('click', () => {
             const id = CypherCrypto.generateSessionId();
             elements.sessionId.value = id;
@@ -346,11 +351,27 @@
     }
 
     async function enterChat(sessionId, password) {
-        const btn = state.currentPage === 'create' ? elements.btnStartChat : elements.btnJoinChat;
+        const isCreating = state.currentPage === 'create';
+        const btn = isCreating ? elements.btnStartChat : elements.btnJoinChat;
         const originalText = btn.textContent;
         btn.textContent = 'Connecting...';
         btn.disabled = true;
         try {
+            if (isCreating) {
+                const createResp = await fetch('api/create.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+                if (!createResp.ok) {
+                    const d = await createResp.json().catch(() => ({}));
+                    showToast(d.error || 'Could not create session.');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
             state.cryptoKey = await CypherCrypto.deriveKey(password, sessionId);
             state.sessionId = sessionId;
             state.password = password;
@@ -607,6 +628,12 @@
         if (!state.sessionId || !state.cryptoKey) return;
         try {
             const resp = await fetch('api/messages.php?sessionId=' + encodeURIComponent(state.sessionId) + '&since=' + state.lastMessageTimestamp);
+            if (resp.status === 404) {
+                stopPolling();
+                addSystemMessage('Session not found. It may have expired or never existed.');
+                leaveChat();
+                return;
+            }
             if (!resp.ok) { updateConnectionStatus(false); state.pollErrorCount++; return; }
             state.pollErrorCount = 0;
             updateConnectionStatus(true);
@@ -644,10 +671,10 @@
                 const messageData = JSON.parse(dec);
                 if (state.sentMessageIds.has(messageData.id)) return;
                 displayMessage(messageData, false);
+                if (state.soundEnabled) playNotificationSound();
                 if (document.hidden) {
                     state.unreadCount++;
                     document.title = '(' + state.unreadCount + ') ' + state.originalTitle;
-                    if (state.soundEnabled) playNotificationSound();
                 }
             } else {
                 displayEncryptionError(msg.timestamp);
@@ -825,17 +852,45 @@
         }
     }
 
+    let _audioCtx = null;
+    function _getAudioCtx() {
+        if (!_audioCtx) {
+            try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        }
+        return _audioCtx;
+    }
+
     function playNotificationSound() {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 800; osc.type = 'sine'; gain.gain.value = 0.1;
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-            osc.stop(ctx.currentTime + 0.3);
-        } catch (e) {}
+            const ctx = _getAudioCtx();
+            if (!ctx) return;
+            const play = () => {
+                const t = ctx.currentTime;
+
+                // first tone
+                const o1 = ctx.createOscillator();
+                const g1 = ctx.createGain();
+                o1.connect(g1); g1.connect(ctx.destination);
+                o1.type = 'sine';
+                o1.frequency.setValueAtTime(880, t);
+                g1.gain.setValueAtTime(0.25, t);
+                g1.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                o1.start(t); o1.stop(t + 0.18);
+
+                // second tone, slightly higher, 160ms later
+                const o2 = ctx.createOscillator();
+                const g2 = ctx.createGain();
+                o2.connect(g2); g2.connect(ctx.destination);
+                o2.type = 'sine';
+                o2.frequency.setValueAtTime(1100, t + 0.16);
+                g2.gain.setValueAtTime(0, t);
+                g2.gain.setValueAtTime(0.22, t + 0.16);
+                g2.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+                o2.start(t); o2.stop(t + 0.38);
+            };
+            if (ctx.state === 'suspended') ctx.resume().then(play);
+            else play();
+        } catch(e) {}
     }
 
     async function copyToClipboard(text) {
