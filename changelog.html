@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog — CypherBay</title>
+    <meta name="robots" content="noindex">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .changelog-content {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .changelog-header {
+            margin-bottom: 2.5rem;
+        }
+        .changelog-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+        }
+        .changelog-header p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .entry {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 0 1.75rem;
+            margin-bottom: 0;
+            position: relative;
+        }
+        .entry::before {
+            content: '';
+            position: absolute;
+            left: 120px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border-color);
+            margin-left: 0.875rem;
+        }
+        .entry:first-child::before { top: 1.2rem; }
+        .entry:last-child::before  { bottom: calc(100% - 1.2rem); }
+
+        .entry-date {
+            text-align: right;
+            padding-top: 0.9rem;
+            padding-right: 1.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+
+        .entry-right {
+            padding: 0.6rem 0 2rem 1.75rem;
+            position: relative;
+        }
+        .entry-right::before {
+            content: '';
+            position: absolute;
+            left: -0.5rem;
+            top: 1.15rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            transform: translateY(-50%);
+        }
+
+        .entry-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            border: 1px solid;
+        }
+        .tag-security  { color: #ff4545; border-color: rgba(255,69,69,0.35); background: rgba(255,69,69,0.08); }
+        .tag-feature   { color: #39ff14; border-color: rgba(57,255,20,0.35); background: rgba(57,255,20,0.07); }
+        .tag-fix       { color: #f5a623; border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.08); }
+        .tag-design    { color: #7eb3ff; border-color: rgba(126,179,255,0.35); background: rgba(126,179,255,0.08); }
+        .tag-breaking  { color: #ff4545; border-color: rgba(255,69,69,0.5); background: rgba(255,69,69,0.12); }
+
+        [data-theme="light"] .tag-security  { color: #cc2222; border-color: rgba(204,34,34,0.3); background: rgba(204,34,34,0.06); }
+        [data-theme="light"] .tag-feature   { color: #0a6600; border-color: rgba(10,102,0,0.3); background: rgba(10,102,0,0.06); }
+        [data-theme="light"] .tag-fix       { color: #996600; border-color: rgba(153,102,0,0.3); background: rgba(153,102,0,0.06); }
+        [data-theme="light"] .tag-design    { color: #1a56a0; border-color: rgba(26,86,160,0.3); background: rgba(26,86,160,0.06); }
+
+        .entry-title {
+            font-size: 0.97rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.01em;
+        }
+        .entry-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+        .entry-desc code {
+            font-family: inherit;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            font-size: 0.78rem;
+            color: var(--accent-primary);
+        }
+
+        /* highlight dot color by primary tag */
+        .entry[data-primary="security"] .entry-right::before { border-color: #ff4545; background: rgba(255,69,69,0.25); }
+        .entry[data-primary="feature"]  .entry-right::before { border-color: var(--accent-primary); background: rgba(57,255,20,0.2); }
+        .entry[data-primary="fix"]      .entry-right::before { border-color: #f5a623; background: rgba(245,166,35,0.2); }
+        .entry[data-primary="design"]   .entry-right::before { border-color: #7eb3ff; background: rgba(126,179,255,0.2); }
+
+        @media (max-width: 600px) {
+            .changelog-content { padding: 1rem; }
+            .entry { grid-template-columns: 1fr; gap: 0; }
+            .entry::before { display: none; }
+            .entry-date { text-align: left; padding: 0; margin-bottom: 0.4rem; padding-top: 1rem; }
+            .entry-right { padding: 0 0 1.5rem 0; }
+            .entry-right::before { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="page active">
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <a href="/" class="btn-back" style="position:static;transform:none;font-size:0.9rem;">&lt; Back</a>
+                    </div>
+                    <div class="header-center">
+                        <h1>CypherBay</h1>
+                        <p class="tagline">Changelog</p>
+                    </div>
+                    <div class="header-right">
+                        <button id="theme-toggle" class="btn-theme" title="Toggle theme"></button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="changelog-content">
+                <div class="changelog-header">
+                    <h2>Release History</h2>
+                    <p>All notable changes to CypherBay, most recent first.</p>
+                </div>
+
+                <div class="changelog-entries">
+
+                    <div class="entry" data-primary="security">
+                        <div class="entry-date">2026-06-30</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-security">Security</span>
+                            </div>
+                            <div class="entry-title">PBKDF2 iterations increased to 310,000</div>
+                            <div class="entry-desc">
+                                Key derivation hardened from 100,000 to 310,000 PBKDF2-SHA256 iterations.
+                                Brute-forcing a session password now costs 3× more compute per guess.
+                                Salt prefix updated to <code>CypherBay-v2-</code> to prevent cross-version key collisions.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="security">
+                        <div class="entry-date">2026-06-30</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-security">Security</span>
+                                <span class="tag tag-feature">Feature</span>
+                            </div>
+                            <div class="entry-title">Client-side file encryption</div>
+                            <div class="entry-desc">
+                                Files are now encrypted with AES-256-GCM in the browser before upload.
+                                The server receives and stores only an opaque binary blob — no filename, no MIME type, no readable content.
+                                Decryption happens in the receiver's browser using the shared session password.
+                                Anyone with a direct file URL sees random bytes.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="feature">
+                        <div class="entry-date">2026-06-30</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-feature">Feature</span>
+                            </div>
+                            <div class="entry-title">Inline image display in chat</div>
+                            <div class="entry-desc">
+                                Images now render directly in the chat bubble. While the encrypted file is fetched and decrypted,
+                                a loading spinner is shown. Once decrypted, the image appears inline. Click opens it full-size in a new tab.
+                                Videos and audio also play directly in-chat.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="feature">
+                        <div class="entry-date">2026-06-30</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-feature">Feature</span>
+                                <span class="tag tag-security">Security</span>
+                            </div>
+                            <div class="entry-title">Self-hosted file storage replaces 0x0.st</div>
+                            <div class="entry-desc">
+                                File uploads no longer go to the external service 0x0.st. Files are stored directly on the CypherBay server
+                                under <code>data/uploads/</code> with a random 32-character hex ID.
+                                Files are automatically deleted after 7 days. No third-party involvement in any part of the communication.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="design">
+                        <div class="entry-date">2026-06-30</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-design">Design</span>
+                            </div>
+                            <div class="entry-title">Landing page layout overhaul</div>
+                            <div class="entry-desc">
+                                Action buttons moved above the feature grid so they are immediately visible on load.
+                                Features now render in a 3-column grid on desktop, 2-column on tablet, single column on mobile.
+                                Cards show a green top-border accent on hover instead of a full border change.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="fix">
+                        <div class="entry-date">2026-06-29</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-fix">Fix</span>
+                            </div>
+                            <div class="entry-title">QR codes now open on iPhone</div>
+                            <div class="entry-desc">
+                                The QR library previously only supported alphanumeric mode, which excludes the <code>#</code> character.
+                                Byte mode encoding was added so full URLs including the hash fragment can be encoded.
+                                Separately, the invite modal was passing only the session ID to the QR renderer instead of the full URL —
+                                iPhone Camera saw plain text, not a link.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="feature">
+                        <div class="entry-date">2026-06-29</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-feature">Feature</span>
+                            </div>
+                            <div class="entry-title">Session cookie and invite modal</div>
+                            <div class="entry-desc">
+                                Sessions can be saved to a <code>cypherbay_session</code> cookie (opt-in via checkbox).
+                                A new Invite button in the chat toolbar opens a modal with a scannable QR code and copyable link and session ID.
+                                The resume-session widget on the landing page detects any saved session and offers to rejoin.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="security">
+                        <div class="entry-date">2026-06-29</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-security">Security</span>
+                                <span class="tag tag-fix">Fix</span>
+                            </div>
+                            <div class="entry-title">Rate limiting hardened across all endpoints</div>
+                            <div class="entry-desc">
+                                Typing events are excluded from rate limiting — previously they consumed the same bucket as messages,
+                                making it trivial to exhaust the limit without sending anything.
+                                Separate per-IP buckets now exist for <code>send</code>, <code>upload</code>, and <code>delete</code>.
+                                Rate limiting added to <code>upload.php</code> (5/min) and <code>delete.php</code> (10/min), which were previously uncapped.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="security">
+                        <div class="entry-date">2026-06-29</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-security">Security</span>
+                                <span class="tag tag-fix">Fix</span>
+                            </div>
+                            <div class="entry-title">Security audit — header injection, file locking, PHP logic</div>
+                            <div class="entry-desc">
+                                Fixed header injection in <code>upload.php</code>: filename was passed raw into MIME headers.
+                                Added shared file locking (<code>LOCK_SH</code>) when reading session files to prevent race conditions with concurrent writes.
+                                Fixed a PHP falsy-empty-array bug in <code>send.php</code>: <code>if ($saved)</code> evaluates to false for an empty array,
+                                discarding valid session state.
+                                CSP headers tightened across all API endpoints.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry" data-primary="design">
+                        <div class="entry-date">2026-06-28</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-design">Design</span>
+                                <span class="tag tag-feature">Feature</span>
+                            </div>
+                            <div class="entry-title">UI redesign and per-minute message counter</div>
+                            <div class="entry-desc">
+                                Primary text changed from neon green <code>#39ff14</code> to near-white <code>#ddeedd</code> — green is now reserved for UI chrome and accents only.
+                                Bracket notation (<code>[COPY]</code>, <code>[E2E]</code>) replaced with inline SVG icons.
+                                Chat layout fixed with proper flexbox constraints.
+                                Added a live message counter showing remaining sends before the per-minute rate limit.
+                                Polling interval increased from 1 s to 2.5 s with exponential backoff on connection errors.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+
+            <footer>
+                <p>CypherBay &mdash; <a href="/" style="color:var(--text-muted);text-decoration:none;">Back to app</a></p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('theme-toggle');
+            function updateIcon(theme) {
+                btn.innerHTML = theme === 'light'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+            }
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            updateIcon(current);
+            btn.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('theme', next);
+                updateIcon(next);
+            });
+        })();
+    </script>
+</body>
+</html>

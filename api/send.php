@@ -70,12 +70,17 @@ if ($isTyping && strlen($data['typing']) > 5000) {
 $dataDir = __DIR__ . '/../data/sessions';
 
 if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0700, true);
+    @mkdir($dataDir, 0700, true);
+}
+if (!is_dir($dataDir)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Server storage not available']);
+    exit;
 }
 
 $sessionFile = $dataDir . '/' . $sessionId . '.json';
 
-$fp = fopen($sessionFile, 'c+');
+$fp = @fopen($sessionFile, 'c+');
 if (!$fp) {
     http_response_code(500);
     echo json_encode(['error' => 'Server error']);

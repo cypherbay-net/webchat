@@ -1,12 +1,21 @@
 const QRCode = (function() {
     const ALPHANUM = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+
+    // Error correction level L, single block
+    // [size, data bytes, ec bytes, alignment pattern centers]
+    const PARAMS = {
+        1: { s: 21, db: 19, ec:  7, align: []         },
+        2: { s: 25, db: 34, ec: 10, align: [[18, 18]] },
+        3: { s: 29, db: 55, ec: 15, align: [[22, 22]] },
+    };
+
+    // Galois field tables
     const EXP = new Uint8Array(256);
     const LOG = new Uint8Array(256);
-    let x = 1;
+    let gx = 1;
     for (let i = 0; i < 255; i++) {
-        EXP[i] = x;
-        LOG[x] = i;
-        x = (x << 1) ^ (x & 128 ? 0x11d : 0);
+        EXP[i] = gx; LOG[gx] = i;
+        gx = (gx << 1) ^ (gx & 128 ? 0x11d : 0);
     }
     EXP[255] = EXP[0];
 
@@ -35,8 +44,7 @@ const QRCode = (function() {
         return msg.slice(data.length);
     }
 
-    function encodeData(text) {
-        text = text.toUpperCase();
+    function encodeAlphanumeric(text, dataBytes) {
         let bits = '0010';
         bits += text.length.toString(2).padStart(9, '0');
         for (let i = 0; i < text.length; i += 2) {
@@ -51,16 +59,45 @@ const QRCode = (function() {
         while (bits.length % 8 !== 0) bits += '0';
         const bytes = [];
         for (let i = 0; i < bits.length; i += 8) bytes.push(parseInt(bits.substr(i, 8), 2));
-        const pad = [0xEC, 0x11];
-        let pi = 0;
-        while (bytes.length < 19) { bytes.push(pad[pi % 2]); pi++; }
+        const pad = [0xEC, 0x11]; let pi = 0;
+        while (bytes.length < dataBytes) bytes.push(pad[pi++ % 2]);
         return new Uint8Array(bytes);
     }
 
-    function createMatrix(data, ecData) {
-        const s = 21;
-        const m = Array.from({length: s}, () => new Int8Array(s));
-        const res = Array.from({length: s}, () => new Uint8Array(s));
+    function encodeByte(text, dataBytes) {
+        let bits = '0100'; // byte mode indicator
+        bits += text.length.toString(2).padStart(8, '0');
+        for (let i = 0; i < text.length; i++) {
+            bits += text.charCodeAt(i).toString(2).padStart(8, '0');
+        }
+        bits += '0000';
+        while (bits.length % 8 !== 0) bits += '0';
+        const bytes = [];
+        for (let i = 0; i < bits.length; i += 8) bytes.push(parseInt(bits.substr(i, 8), 2));
+        const pad = [0xEC, 0x11]; let pi = 0;
+        while (bytes.length < dataBytes) bytes.push(pad[pi++ % 2]);
+        return new Uint8Array(bytes);
+    }
+
+    // Max usable bytes per version: dataBytes minus mode(4b)+count(8b) overhead = (db*8-12)/8
+    // V1: 17, V2: 32, V3: 53
+    function pickVersionByte(len) {
+        if (len <= 17) return 1;
+        if (len <= 32) return 2;
+        return 3;
+    }
+
+    // Alphanumeric capacities (L): V1=25, V2=47, V3=77
+    function pickVersionAlpha(len) {
+        if (len <= 25) return 1;
+        if (len <= 47) return 2;
+        return 3;
+    }
+
+    function createMatrix(data, ecData, version) {
+        const { s, align } = PARAMS[version];
+        const m   = Array.from({ length: s }, () => new Int8Array(s));
+        const res = Array.from({ length: s }, () => new Uint8Array(s));
 
         function finder(row, col) {
             for (let r = -1; r <= 7; r++) {
@@ -75,14 +112,13 @@ const QRCode = (function() {
                 }
             }
         }
-        finder(0, 0);
-        finder(0, s - 7);
-        finder(s - 7, 0);
+        finder(0, 0); finder(0, s - 7); finder(s - 7, 0);
 
         for (let i = 8; i < s - 8; i++) {
             m[6][i] = (i % 2 === 0) ? 1 : -1; res[6][i] = 1;
             m[i][6] = (i % 2 === 0) ? 1 : -1; res[i][6] = 1;
         }
+
         m[s - 8][8] = 1; res[s - 8][8] = 1;
 
         for (let i = 0; i < 8; i++) {
@@ -91,23 +127,34 @@ const QRCode = (function() {
         }
         res[8][8] = 1;
 
+        for (const [ar, ac] of align) {
+            for (let r = ar - 2; r <= ar + 2; r++) {
+                for (let c = ac - 2; c <= ac + 2; c++) {
+                    if (res[r][c]) continue;
+                    const edge = r === ar-2 || r === ar+2 || c === ac-2 || c === ac+2;
+                    m[r][c] = (edge || (r === ar && c === ac)) ? 1 : -1;
+                    res[r][c] = 1;
+                }
+            }
+        }
+
         const all = new Uint8Array(data.length + ecData.length);
         all.set(data); all.set(ecData, data.length);
 
         let bi = 0, up = true;
         for (let col = s - 1; col >= 0; col -= 2) {
             if (col === 6) col = 5;
-            const rows = up ? Array.from({length: s}, (_, i) => s - 1 - i) : Array.from({length: s}, (_, i) => i);
+            const rows = up
+                ? Array.from({ length: s }, (_, i) => s - 1 - i)
+                : Array.from({ length: s }, (_, i) => i);
             for (const row of rows) {
-                for (let c = 0; c < 2; c++) {
-                    const cc = col - c;
+                for (let dc = 0; dc < 2; dc++) {
+                    const cc = col - dc;
                     if (cc < 0 || res[row][cc]) continue;
-                    if (bi < all.length * 8) {
-                        m[row][cc] = ((all[Math.floor(bi / 8)] >> (7 - (bi % 8))) & 1) ? 1 : -1;
-                        bi++;
-                    } else {
-                        m[row][cc] = -1;
-                    }
+                    m[row][cc] = bi < all.length * 8
+                        ? (((all[Math.floor(bi / 8)] >> (7 - (bi % 8))) & 1) ? 1 : -1)
+                        : -1;
+                    bi++;
                 }
             }
             up = !up;
@@ -117,7 +164,7 @@ const QRCode = (function() {
 
     function applyMask(matrix, res, s, mn) {
         const masked = matrix.map(r => Int8Array.from(r));
-        const fn = [
+        const fns = [
             (r, c) => (r + c) % 2 === 0,
             (r, c) => r % 2 === 0,
             (r, c) => c % 3 === 0,
@@ -126,7 +173,8 @@ const QRCode = (function() {
             (r, c) => (r * c) % 2 + (r * c) % 3 === 0,
             (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0,
             (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0,
-        ][mn];
+        ];
+        const fn = fns[mn];
         for (let r = 0; r < s; r++)
             for (let c = 0; c < s; c++)
                 if (!res[r][c] && fn(r, c)) masked[r][c] = masked[r][c] === 1 ? -1 : 1;
@@ -138,27 +186,26 @@ const QRCode = (function() {
         for (let r = 0; r < s; r++) {
             let cnt = 1;
             for (let c = 1; c < s; c++) {
-                if (m[r][c] === m[r][c - 1]) { cnt++; if (cnt === 5) p += 3; else if (cnt > 5) p++; }
+                if (m[r][c] === m[r][c-1]) { cnt++; if (cnt === 5) p += 3; else if (cnt > 5) p++; }
                 else cnt = 1;
             }
         }
         for (let c = 0; c < s; c++) {
             let cnt = 1;
             for (let r = 1; r < s; r++) {
-                if (m[r][c] === m[r - 1][c]) { cnt++; if (cnt === 5) p += 3; else if (cnt > 5) p++; }
+                if (m[r][c] === m[r-1][c]) { cnt++; if (cnt === 5) p += 3; else if (cnt > 5) p++; }
                 else cnt = 1;
             }
         }
         for (let r = 0; r < s - 1; r++)
             for (let c = 0; c < s - 1; c++)
-                if (m[r][c] === m[r][c + 1] && m[r][c] === m[r + 1][c] && m[r][c] === m[r + 1][c + 1]) p += 3;
+                if (m[r][c] === m[r][c+1] && m[r][c] === m[r+1][c] && m[r][c] === m[r+1][c+1]) p += 3;
         return p;
     }
 
     function formatInfo(matrix, s, mn) {
         const ecl = 0b01;
-        let fb = (ecl << 3) | mn;
-        let rem = fb << 10;
+        let fb = (ecl << 3) | mn, rem = fb << 10;
         for (let i = 14; i >= 10; i--) if (rem & (1 << i)) rem ^= 0b10100110111 << (i - 10);
         fb = ((ecl << 3) | mn) << 10 | rem;
         fb ^= 0b101010000010010;
@@ -172,19 +219,32 @@ const QRCode = (function() {
     }
 
     function render(canvas, text) {
-        text = text.toUpperCase();
-        const data = encodeData(text);
-        const ec = rsEncode(data, 7);
-        const { m, res, s } = createMatrix(data, ec);
+        const upper = text.toUpperCase();
+        const canAlpha = [...upper].every(c => ALPHANUM.includes(c));
+
+        let version, data;
+        if (canAlpha) {
+            version = pickVersionAlpha(upper.length);
+            data = encodeAlphanumeric(upper, PARAMS[version].db);
+        } else {
+            version = pickVersionByte(text.length);
+            data = encodeByte(text, PARAMS[version].db);
+        }
+
+        const p = PARAMS[version];
+        const ec = rsEncode(data, p.ec);
+        const { m, res, s } = createMatrix(data, ec, version);
+
         let bestMask = 0, bestPen = Infinity;
         for (let mn = 0; mn < 8; mn++) {
             const masked = applyMask(m, res, s, mn);
             formatInfo(masked, s, mn);
-            const p = penalty(masked, s);
-            if (p < bestPen) { bestPen = p; bestMask = mn; }
+            const pen = penalty(masked, s);
+            if (pen < bestPen) { bestPen = pen; bestMask = mn; }
         }
         const final = applyMask(m, res, s, bestMask);
         formatInfo(final, s, bestMask);
+
         const scale = 5, border = 4, total = (s + border * 2) * scale;
         canvas.width = total; canvas.height = total;
         const ctx = canvas.getContext('2d');

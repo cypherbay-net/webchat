@@ -5,13 +5,16 @@ function enforceRateLimit($maxRequests, $windowSeconds, $key = '') {
     $dir = __DIR__ . '/../data/ratelimit';
 
     if (!is_dir($dir)) {
-        mkdir($dir, 0700, true);
+        @mkdir($dir, 0700, true);
+    }
+    if (!is_dir($dir)) {
+        return true; // can't create dir — allow the request rather than crash
     }
 
     $file = $dir . '/' . substr($hash, 0, 40) . '.json';
     $now = time();
 
-    $fp = fopen($file, 'c+');
+    $fp = @fopen($file, 'c+');
     if (!$fp) {
         return true;
     }

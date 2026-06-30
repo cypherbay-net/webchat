@@ -1,6 +1,6 @@
 const CypherCrypto = {
-    SALT_PREFIX: 'CypherBay-v1-',
-    PBKDF2_ITERATIONS: 100000,
+    SALT_PREFIX: 'CypherBay-v2-',
+    PBKDF2_ITERATIONS: 310000,
 
     async deriveKey(password, sessionId) {
         const salt = new TextEncoder().encode(this.SALT_PREFIX + sessionId);

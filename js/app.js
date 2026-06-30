@@ -41,6 +41,7 @@
         updateSoundIcon();
         checkResumeCookie();
         showPage('landing');
+        checkUrlPath();
         checkUrlHash();
     }
 
@@ -103,6 +104,15 @@
         elements.backButtons = document.querySelectorAll('.btn-back');
     }
 
+    function checkUrlPath() {
+        const seg = window.location.pathname.replace(/^\//, '').toLowerCase();
+        if (seg && CypherCrypto.isValidSessionId(seg)) {
+            elements.joinSession.value = seg;
+            showPage('join');
+            window.history.replaceState(null, '', '/');
+        }
+    }
+
     function checkUrlHash() {
         const hash = window.location.hash.slice(1);
         if (hash && CypherCrypto.isValidSessionId(hash)) {
@@ -138,8 +148,7 @@
         });
 
         elements.copyLink.addEventListener('click', () => {
-            const url = window.location.origin + window.location.pathname + '#' + elements.sessionId.value;
-            copyToClipboard(url);
+            copyToClipboard(sessionUrl(elements.sessionId.value));
         });
 
         elements.regenerateSession.addEventListener('click', () => {
@@ -326,9 +335,13 @@
         return { level: 3, text: 'Strong', cls: 'strength-strong' };
     }
 
-    function renderQRCode(text) {
+    function sessionUrl(sessionId) {
+        return window.location.origin + window.location.pathname.replace(/\/$/, '') + '/#' + sessionId;
+    }
+
+    function renderQRCode(sessionId) {
         if (typeof QRCode !== 'undefined' && elements.qrCanvas) {
-            QRCode.render(elements.qrCanvas, text);
+            QRCode.render(elements.qrCanvas, sessionUrl(sessionId));
         }
     }
 
@@ -492,23 +505,40 @@
             (remaining <= 3 ? ' counter-danger' : '');
     }
 
+    async function fetchAndDecryptBlob(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Download failed (HTTP ' + resp.status + ')');
+        const buffer = await resp.arrayBuffer();
+        if (buffer.byteLength < 13) throw new Error('Invalid encrypted file');
+        const iv = new Uint8Array(buffer, 0, 12);
+        const ciphertext = buffer.slice(12);
+        return crypto.subtle.decrypt({ name: 'AES-GCM', iv }, state.cryptoKey, ciphertext);
+    }
+
     async function uploadAndSendFile(file) {
-        if (file.size > 100 * 1024 * 1024) {
-            addSystemMessage('File too large. Max 100MB.');
+        if (file.size > 25 * 1024 * 1024) {
+            addSystemMessage('File too large. Max 25 MB.');
             return;
         }
-        const confirmed = await showUploadWarning(file.name);
-        if (!confirmed) return;
         try {
             elements.uploadProgress.classList.remove('hidden');
             elements.btnAttach.disabled = true;
+
+            // Encrypt file client-side before upload — server only stores an opaque blob
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const ciphertext = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                state.cryptoKey,
+                await file.arrayBuffer()
+            );
+            const encryptedBlob = new Blob([iv.buffer, ciphertext]);
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', encryptedBlob, 'encrypted.bin');
             const response = await fetch('api/upload.php', { method: 'POST', body: formData });
-            const text = await response.text();
-            if (!response.ok) throw new Error(text);
             let result;
-            try { result = JSON.parse(text); } catch (e) { throw new Error(text); }
+            try { result = await response.json(); } catch (e) { throw new Error('Server returned invalid response'); }
+            if (!response.ok) throw new Error(result.error || 'Upload failed (HTTP ' + response.status + ')');
             if (!result.success || !result.url) throw new Error(result.error || 'Upload failed');
 
             const messageId = CypherCrypto.generateMessageId();
@@ -517,6 +547,7 @@
                 alias: state.localAlias,
                 type: 'file',
                 fileType: getFileType(file.type),
+                mimeType: file.type || 'application/octet-stream',
                 fileName: file.name,
                 fileSize: file.size,
                 url: result.url,
@@ -530,9 +561,9 @@
                 body: JSON.stringify({ sessionId: state.sessionId, payload: encrypted })
             });
             if (sendResp.ok) displayMessage(messageData, true);
-            else addSystemMessage('Could not send file message.');
+            else addSystemMessage('File uploaded but could not send the message.');
         } catch (error) {
-            addSystemMessage('File upload failed.');
+            addSystemMessage('Upload failed: ' + error.message);
         } finally {
             elements.uploadProgress.classList.add('hidden');
             elements.btnAttach.disabled = false;
@@ -657,34 +688,60 @@
         const container = document.createElement('div');
         container.className = 'file-content';
         const safeUrl = isSafeUrl(messageData.url) ? messageData.url : '';
+        const mimeType = messageData.mimeType || 'application/octet-stream';
 
         if (messageData.fileType === 'image') {
+            const wrap = document.createElement('div');
+            wrap.className = 'img-wrap img-loading';
             const img = document.createElement('img');
-            img.src = safeUrl;
             img.alt = messageData.fileName;
             img.className = 'message-image';
-            img.loading = 'lazy';
-            img.addEventListener('click', () => { if (safeUrl) window.open(safeUrl, '_blank'); });
-            container.appendChild(img);
+            wrap.appendChild(img);
+            if (safeUrl) {
+                fetchAndDecryptBlob(safeUrl).then(decrypted => {
+                    const objUrl = URL.createObjectURL(new Blob([decrypted], { type: mimeType }));
+                    img.addEventListener('load', () => wrap.classList.remove('img-loading'));
+                    img.addEventListener('error', () => {
+                        wrap.classList.remove('img-loading');
+                        img.alt = '[Image failed]';
+                    });
+                    img.addEventListener('click', () => window.open(objUrl, '_blank'));
+                    img.src = objUrl;
+                }).catch(() => {
+                    wrap.classList.remove('img-loading');
+                    img.alt = '[Decryption failed]';
+                });
+            } else {
+                wrap.classList.remove('img-loading');
+            }
+            container.appendChild(wrap);
         } else if (messageData.fileType === 'video') {
             const video = document.createElement('video');
-            video.src = safeUrl;
             video.controls = true;
             video.className = 'message-video';
-            video.preload = 'metadata';
+            video.preload = 'none';
+            if (safeUrl) {
+                fetchAndDecryptBlob(safeUrl).then(decrypted => {
+                    const objUrl = URL.createObjectURL(new Blob([decrypted], { type: mimeType }));
+                    video.src = objUrl;
+                }).catch(() => { video.remove(); container.appendChild(makeErrorSpan('Decryption failed')); });
+            }
             container.appendChild(video);
         } else if (messageData.fileType === 'audio') {
             const audio = document.createElement('audio');
-            audio.src = safeUrl;
             audio.controls = true;
             audio.className = 'message-audio';
+            if (safeUrl) {
+                fetchAndDecryptBlob(safeUrl).then(decrypted => {
+                    const objUrl = URL.createObjectURL(new Blob([decrypted], { type: mimeType }));
+                    audio.src = objUrl;
+                }).catch(() => { audio.remove(); container.appendChild(makeErrorSpan('Decryption failed')); });
+            }
             container.appendChild(audio);
         } else {
-            const link = document.createElement('a');
-            if (safeUrl) link.href = safeUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.className = 'file-link';
+            const btn = document.createElement('button');
+            btn.className = 'file-link';
+            btn.type = 'button';
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
             svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
@@ -700,10 +757,38 @@
             const sizeEl = document.createElement('span'); sizeEl.className = 'file-size';
             sizeEl.textContent = formatFileSize(messageData.fileSize);
             info.appendChild(nameEl); info.appendChild(sizeEl);
-            link.appendChild(svg); link.appendChild(info);
-            container.appendChild(link);
+            btn.appendChild(svg); btn.appendChild(info);
+            if (safeUrl) {
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    const prevText = nameEl.textContent;
+                    nameEl.textContent = 'Decrypting…';
+                    try {
+                        const decrypted = await fetchAndDecryptBlob(safeUrl);
+                        const objUrl = URL.createObjectURL(new Blob([decrypted], { type: mimeType }));
+                        const a = document.createElement('a');
+                        a.href = objUrl;
+                        a.download = messageData.fileName;
+                        a.click();
+                        setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
+                    } catch (e) {
+                        addSystemMessage('Could not decrypt file.');
+                    } finally {
+                        btn.disabled = false;
+                        nameEl.textContent = prevText;
+                    }
+                });
+            }
+            container.appendChild(btn);
         }
         return container;
+    }
+
+    function makeErrorSpan(text) {
+        const s = document.createElement('span');
+        s.className = 'file-size';
+        s.textContent = '[' + text + ']';
+        return s;
     }
 
     function displayEncryptionError(timestamp) {
@@ -774,24 +859,6 @@
         setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    function showUploadWarning(fileName) {
-        return new Promise((resolve) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = '<div class="modal-header"><span class="modal-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><h3>File Upload Warning</h3></div><div class="modal-body"><p class="modal-filename"></p><ul class="modal-warnings"><li>The file will be uploaded to an external server (0x0.st)</li><li>The file itself is <strong>NOT encrypted</strong></li><li>Only the link in the chat is encrypted</li><li>Anyone with the link can access the file</li></ul></div><div class="modal-actions"><button class="btn-secondary modal-cancel">Cancel</button><button class="btn-primary modal-confirm">Upload</button></div>';
-            modal.querySelector('.modal-filename').textContent = fileName;
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-            requestAnimationFrame(() => overlay.classList.add('show'));
-            const cleanup = (r) => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); resolve(r); };
-            modal.querySelector('.modal-cancel').addEventListener('click', () => cleanup(false));
-            modal.querySelector('.modal-confirm').addEventListener('click', () => cleanup(true));
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(false); });
-        });
-    }
-
     function showDeleteConfirmation() {
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
@@ -854,7 +921,7 @@
 
     function showInviteModal() {
         const sessionId = state.sessionId;
-        const joinUrl = window.location.origin + window.location.pathname + '#' + sessionId;
+        const joinUrl = sessionUrl(sessionId);
 
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -896,7 +963,7 @@
         requestAnimationFrame(() => overlay.classList.add('show'));
 
         if (typeof QRCode !== 'undefined') {
-            QRCode.render(modal.querySelector('#invite-qr-canvas'), sessionId);
+            QRCode.render(modal.querySelector('#invite-qr-canvas'), joinUrl);
         }
 
         modal.querySelectorAll('.invite-copy').forEach(btn => {

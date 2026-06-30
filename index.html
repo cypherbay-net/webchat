@@ -3,11 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <meta name="description" content="CypherBay - Anonymous, end-to-end encrypted web messenger without registration">
-    <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://0x0.st; media-src https://0x0.st; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
+
+    <title>CypherBay — Anonymous End-to-End Encrypted Chat</title>
+    <meta name="description" content="CypherBay is a free, anonymous, end-to-end encrypted web chat. No registration, no account, no tracking. AES-256-GCM encryption. Sessions auto-delete after 1 hour.">
+    <meta name="keywords" content="encrypted chat, anonymous chat, end-to-end encryption, private messaging, no registration chat, secure chat, E2E encrypted, self-hosted chat, anonymous messenger, private chat room, AES-256, encrypted messaging, no account chat, disposable chat">
+    <meta name="author" content="CypherBay">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cypherbay.net/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cypherbay.net/">
+    <meta property="og:title" content="CypherBay — Anonymous End-to-End Encrypted Chat">
+    <meta property="og:description" content="Free anonymous chat with AES-256-GCM encryption. No registration, no account, no logs. Sessions auto-delete after 1 hour.">
+    <meta property="og:site_name" content="CypherBay">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="CypherBay — Anonymous Encrypted Chat">
+    <meta name="twitter:description" content="Free anonymous chat with AES-256-GCM encryption. No registration, no account, no logs.">
+    <meta name="twitter:url" content="https://cypherbay.net/">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
     <meta name="referrer" content="no-referrer">
-    <title>CypherBay</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -33,102 +51,107 @@
             </header>
 
             <main class="landing-content">
-                <section class="intro">
-                    <p>
-                        CypherBay is a minimalist web messenger for private communication.
-                        No registration. No accounts. No personal data.
-                    </p>
+                <section class="hero">
+                    <p class="hero-lead">Private conversations with nobody in the middle. No registration, no accounts, no traces.</p>
+                    <div class="actions">
+                        <button id="btn-create" class="btn-primary">Create New Chat</button>
+                        <button id="btn-join" class="btn-secondary">Join Chat</button>
+                        <div id="resume-session" class="resume-session hidden">
+                            <div class="resume-info">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <span>Saved session: <code id="resume-session-id"></code></span>
+                            </div>
+                            <div class="resume-actions">
+                                <button id="btn-resume" class="btn-secondary btn-resume">Rejoin</button>
+                                <button id="btn-clear-session" class="btn-clear-session" title="Remove saved session">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="features">
                     <div class="feature">
                         <div class="feature-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </div>
-                        <div>
-                            <h3>End-to-End Encryption</h3>
-                            <p>AES-256-GCM with PBKDF2 key derivation. The server only ever sees ciphertext.</p>
+                        <div class="feature-body">
+                            <h3>End-to-End Encrypted</h3>
+                            <p>AES-256-GCM. The server only ever receives ciphertext — it cannot read anything.</p>
                         </div>
                     </div>
                     <div class="feature">
                         <div class="feature-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         </div>
-                        <div>
+                        <div class="feature-body">
+                            <h3>Encrypted File Sharing</h3>
+                            <p>Files are encrypted in your browser before upload. The server stores an unreadable blob — only session participants can decrypt.</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        </div>
+                        <div class="feature-body">
                             <h3>No Account Required</h3>
-                            <p>No login, no email, no phone number. Pick any alias per session and start talking.</p>
+                            <p>No login, no email, no phone number. Pick an alias and start talking.</p>
                         </div>
                     </div>
                     <div class="feature">
                         <div class="feature-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                         </div>
-                        <div>
+                        <div class="feature-body">
                             <h3>Zero Tracking</h3>
                             <p>No cookies, no analytics, no fingerprinting. Sessions auto-delete after one hour.</p>
                         </div>
                     </div>
                     <div class="feature">
                         <div class="feature-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                         </div>
-                        <div>
-                            <h3>Real-Time Delivery</h3>
-                            <p>Live typing indicators and instant message delivery with sound notifications.</p>
+                        <div class="feature-body">
+                            <h3>Real-Time</h3>
+                            <p>Live typing indicators and instant delivery with optional sound notifications.</p>
                         </div>
                     </div>
                     <div class="feature">
                         <div class="feature-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                         </div>
-                        <div>
+                        <div class="feature-body">
                             <h3>Easy to Share</h3>
                             <p>QR code and direct link per session. The other party needs no app or account.</p>
                         </div>
                     </div>
                     <div class="feature">
                         <div class="feature-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
                         </div>
-                        <div>
+                        <div class="feature-body">
                             <h3>Self-Hostable</h3>
                             <p>Fully open source. Runs on any PHP server — own your infrastructure.</p>
                         </div>
                     </div>
                 </section>
 
-                <section class="actions">
-                    <button id="btn-create" class="btn-primary">Create New Chat</button>
-                    <button id="btn-join" class="btn-secondary">Join Chat</button>
-                    <div id="resume-session" class="resume-session hidden">
-                        <div class="resume-info">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            <span>Saved session: <code id="resume-session-id"></code></span>
-                        </div>
-                        <div class="resume-actions">
-                            <button id="btn-resume" class="btn-secondary btn-resume">Rejoin</button>
-                            <button id="btn-clear-session" class="btn-clear-session" title="Remove saved session">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="transparency">
-                    <h3>System Limitations</h3>
+                    <h3>Limitations</h3>
                     <ul>
                         <li>Metadata (IP address, connection times) is visible to the server</li>
                         <li>For maximum anonymity: use Tor Browser</li>
                         <li>No guarantees if your device is compromised</li>
-                        <li>Password must be shared via a secure channel</li>
-                        <li>File uploads to 0x0.st are not encrypted</li>
+                        <li>Password must be shared via a separate secure channel</li>
+                        <li>Uploaded files are stored encrypted for 7 days, then auto-deleted</li>
                         <li>Sessions expire automatically after 1 hour</li>
                     </ul>
                 </section>
             </main>
 
             <footer>
-                <p>CypherBay - Privacy by Design</p>
+                <p>CypherBay &mdash; Privacy by Design &nbsp;&middot;&nbsp; <a href="/changelog.html" style="color:var(--text-muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-muted)'">Changelog</a></p>
             </footer>
         </div>
 
@@ -283,9 +306,9 @@
             <div id="crypto-info" class="crypto-info">
                 <details>
                     <summary>Encryption Details</summary>
-                    <p>All messages are encrypted with AES-256-GCM.</p>
-                    <p>The key is derived locally from your password (PBKDF2, 100k iterations).</p>
-                    <p>The server cannot read the content. Your alias is visible to other participants.</p>
+                    <p>Messages and files are encrypted with AES-256-GCM before leaving your device.</p>
+                    <p>The key is derived locally from your password and session ID (PBKDF2-SHA256, 310,000 iterations). The server stores only ciphertext and never sees plaintext.</p>
+                    <p>Files are encrypted in the browser before upload. Decryption happens in the browser on download — the server cannot read them. Your alias is visible to other participants.</p>
                 </details>
             </div>
         </div>

@@ -24,62 +24,53 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/ratelimit.php';
 if (!enforceRateLimit(5, 60, 'upload')) {
     http_response_code(429);
-    echo json_encode(['error' => 'Too many uploads']);
+    echo json_encode(['error' => 'Too many uploads. Try again in a minute.']);
     exit;
 }
 
 if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+    $code = isset($_FILES['file']) ? $_FILES['file']['error'] : 'no_file';
     http_response_code(400);
-    echo json_encode(['error' => 'No file uploaded', 'code' => isset($_FILES['file']) ? $_FILES['file']['error'] : 'no file']);
+    echo json_encode(['error' => 'No file uploaded', 'code' => $code]);
     exit;
 }
 
 $file = $_FILES['file'];
-$maxSize = 100 * 1024 * 1024;
+$maxSize = 25 * 1024 * 1024;
 
 if ($file['size'] > $maxSize) {
     http_response_code(400);
-    echo json_encode(['error' => 'File too large']);
+    echo json_encode(['error' => 'File too large (max 25 MB)']);
     exit;
 }
 
-$boundary = '----WebKitFormBoundary' . bin2hex(random_bytes(16));
-$fileContents = file_get_contents($file['tmp_name']);
-
-$safeName = preg_replace('/[\x00-\x1f\x7f"\\\\]/', '_', $file['name']);
-
-$body = "--$boundary\r\n";
-$body .= "Content-Disposition: form-data; name=\"file\"; filename=\"" . $safeName . "\"\r\n";
-$body .= "Content-Type: " . ($file['type'] ?: 'application/octet-stream') . "\r\n\r\n";
-$body .= $fileContents . "\r\n";
-$body .= "--$boundary--\r\n";
-
-$context = stream_context_create([
-    'http' => [
-        'method' => 'POST',
-        'header' => "Content-Type: multipart/form-data; boundary=$boundary\r\n" .
-                    "Content-Length: " . strlen($body) . "\r\n" .
-                    "User-Agent: CypherBay/1.0\r\n",
-        'content' => $body,
-        'timeout' => 120,
-        'ignore_errors' => true
-    ]
-]);
-
-$response = @file_get_contents('https://0x0.st', false, $context);
-
-if ($response === false) {
-    http_response_code(502);
-    echo json_encode(['error' => 'Upload to external service failed']);
+$uploadDir = __DIR__ . '/../data/uploads';
+if (!is_dir($uploadDir)) {
+    @mkdir($uploadDir, 0755, true);
+}
+if (!is_dir($uploadDir)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Server storage not available']);
     exit;
 }
 
-$url = trim($response);
+// Delete encrypted blobs older than 7 days on each upload
+$cutoff = time() - 7 * 24 * 3600;
+foreach (glob($uploadDir . '/*') ?: [] as $f) {
+    if (is_file($f) && filemtime($f) < $cutoff) @unlink($f);
+}
 
-if (!filter_var($url, FILTER_VALIDATE_URL)) {
-    http_response_code(502);
-    echo json_encode(['error' => 'Invalid response from external service', 'response' => substr($response, 0, 200)]);
+$id       = bin2hex(random_bytes(16));
+$dataPath = $uploadDir . '/' . $id;
+
+if (!move_uploaded_file($file['tmp_name'], $dataPath)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Could not save file on server']);
     exit;
 }
+
+$scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host    = $_SERVER['HTTP_HOST'];
+$url     = $scheme . '://' . $host . '/api/file.php?id=' . $id;
 
 echo json_encode(['success' => true, 'url' => $url]);
