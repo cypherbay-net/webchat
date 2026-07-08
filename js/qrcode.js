@@ -1,15 +1,16 @@
 const QRCode = (function() {
     const ALPHANUM = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
 
-    // Error correction level L, single block
-    // [size, data bytes, ec bytes, alignment pattern centers]
+    // уровень коррекции ошибок L, один блок (версии 6+ используют несколько RS-блоков и здесь не поддерживаются)
     const PARAMS = {
-        1: { s: 21, db: 19, ec:  7, align: []         },
-        2: { s: 25, db: 34, ec: 10, align: [[18, 18]] },
-        3: { s: 29, db: 55, ec: 15, align: [[22, 22]] },
+        1: { s: 21, db:  19, ec:  7, align: []         },
+        2: { s: 25, db:  34, ec: 10, align: [[18, 18]] },
+        3: { s: 29, db:  55, ec: 15, align: [[22, 22]] },
+        4: { s: 33, db:  80, ec: 20, align: [[26, 26]] },
+        5: { s: 37, db: 108, ec: 26, align: [[30, 30]] },
     };
+    const MAX_VERSION = 5;
 
-    // Galois field tables
     const EXP = new Uint8Array(256);
     const LOG = new Uint8Array(256);
     let gx = 1;
@@ -55,7 +56,7 @@ const QRCode = (function() {
                 bits += a.toString(2).padStart(6, '0');
             }
         }
-        bits += '0000';
+        bits += '0000'.slice(0, Math.max(0, Math.min(4, dataBytes * 8 - bits.length)));
         while (bits.length % 8 !== 0) bits += '0';
         const bytes = [];
         for (let i = 0; i < bits.length; i += 8) bytes.push(parseInt(bits.substr(i, 8), 2));
@@ -65,12 +66,12 @@ const QRCode = (function() {
     }
 
     function encodeByte(text, dataBytes) {
-        let bits = '0100'; // byte mode indicator
+        let bits = '0100';
         bits += text.length.toString(2).padStart(8, '0');
         for (let i = 0; i < text.length; i++) {
             bits += text.charCodeAt(i).toString(2).padStart(8, '0');
         }
-        bits += '0000';
+        bits += '0000'.slice(0, Math.max(0, Math.min(4, dataBytes * 8 - bits.length)));
         while (bits.length % 8 !== 0) bits += '0';
         const bytes = [];
         for (let i = 0; i < bits.length; i += 8) bytes.push(parseInt(bits.substr(i, 8), 2));
@@ -79,19 +80,18 @@ const QRCode = (function() {
         return new Uint8Array(bytes);
     }
 
-    // Max usable bytes per version: dataBytes minus mode(4b)+count(8b) overhead = (db*8-12)/8
-    // V1: 17, V2: 32, V3: 53
+    // максимум байт на версию в байтовом режиме: V1:17, V2:32, V3:53, V4:78, V5:106
+    const BYTE_CAP = { 1: 17, 2: 32, 3: 53, 4: 78, 5: 106 };
     function pickVersionByte(len) {
-        if (len <= 17) return 1;
-        if (len <= 32) return 2;
-        return 3;
+        for (let v = 1; v <= MAX_VERSION; v++) if (len <= BYTE_CAP[v]) return v;
+        return null;
     }
 
-    // Alphanumeric capacities (L): V1=25, V2=47, V3=77
+    // ёмкость в алфавитно-цифровом режиме (L): V1=25, V2=47, V3=77, V4=114, V5=154
+    const ALPHA_CAP = { 1: 25, 2: 47, 3: 77, 4: 114, 5: 154 };
     function pickVersionAlpha(len) {
-        if (len <= 25) return 1;
-        if (len <= 47) return 2;
-        return 3;
+        for (let v = 1; v <= MAX_VERSION; v++) if (len <= ALPHA_CAP[v]) return v;
+        return null;
     }
 
     function createMatrix(data, ecData, version) {
@@ -212,7 +212,7 @@ const QRCode = (function() {
         const p1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
         const p2 = [[s-1,8],[s-2,8],[s-3,8],[s-4,8],[s-5,8],[s-6,8],[s-7,8],[8,s-8],[8,s-7],[8,s-6],[8,s-5],[8,s-4],[8,s-3],[8,s-2],[8,s-1]];
         for (let i = 0; i < 15; i++) {
-            const v = ((fb >> i) & 1) ? 1 : -1;
+            const v = ((fb >> (14 - i)) & 1) ? 1 : -1;
             matrix[p1[i][0]][p1[i][1]] = v;
             matrix[p2[i][0]][p2[i][1]] = v;
         }
@@ -225,9 +225,11 @@ const QRCode = (function() {
         let version, data;
         if (canAlpha) {
             version = pickVersionAlpha(upper.length);
+            if (version === null) throw new Error('QRCode: text too long to encode (' + upper.length + ' chars)');
             data = encodeAlphanumeric(upper, PARAMS[version].db);
         } else {
             version = pickVersionByte(text.length);
+            if (version === null) throw new Error('QRCode: text too long to encode (' + text.length + ' bytes)');
             data = encodeByte(text, PARAMS[version].db);
         }
 

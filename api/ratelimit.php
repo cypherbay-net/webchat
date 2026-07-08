@@ -8,7 +8,7 @@ function enforceRateLimit($maxRequests, $windowSeconds, $key = '') {
         @mkdir($dir, 0700, true);
     }
     if (!is_dir($dir)) {
-        return true; // can't create dir — allow the request rather than crash
+        return true; // не удалось создать директорию — пропускаем запрос, а не падаем
     }
 
     $file = $dir . '/' . substr($hash, 0, 40) . '.json';

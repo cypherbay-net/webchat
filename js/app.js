@@ -346,7 +346,13 @@
 
     function renderQRCode(sessionId) {
         if (typeof QRCode !== 'undefined' && elements.qrCanvas) {
-            QRCode.render(elements.qrCanvas, sessionUrl(sessionId));
+            try {
+                QRCode.render(elements.qrCanvas, sessionUrl(sessionId));
+                elements.qrCanvas.closest('.qr-container')?.classList.remove('hidden');
+            } catch (err) {
+                console.warn('QR generation failed (URL too long for QR encoder):', err);
+                elements.qrCanvas.closest('.qr-container')?.classList.add('hidden');
+            }
         }
     }
 
@@ -545,7 +551,7 @@
             elements.uploadProgress.classList.remove('hidden');
             elements.btnAttach.disabled = true;
 
-            // Encrypt file client-side before upload — server only stores an opaque blob
+            // шифруем файл на клиенте перед загрузкой — сервер хранит только непрозрачный blob
             const iv = crypto.getRandomValues(new Uint8Array(12));
             const ciphertext = await crypto.subtle.encrypt(
                 { name: 'AES-GCM', iv },
@@ -867,7 +873,6 @@
             const play = () => {
                 const t = ctx.currentTime;
 
-                // first tone
                 const o1 = ctx.createOscillator();
                 const g1 = ctx.createGain();
                 o1.connect(g1); g1.connect(ctx.destination);
@@ -877,7 +882,6 @@
                 g1.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
                 o1.start(t); o1.stop(t + 0.18);
 
-                // second tone, slightly higher, 160ms later
                 const o2 = ctx.createOscillator();
                 const g2 = ctx.createGain();
                 o2.connect(g2); g2.connect(ctx.destination);
@@ -1018,7 +1022,12 @@
         requestAnimationFrame(() => overlay.classList.add('show'));
 
         if (typeof QRCode !== 'undefined') {
-            QRCode.render(modal.querySelector('#invite-qr-canvas'), joinUrl);
+            try {
+                QRCode.render(modal.querySelector('#invite-qr-canvas'), joinUrl);
+            } catch (err) {
+                console.warn('QR generation failed (URL too long for QR encoder):', err);
+                modal.querySelector('.invite-qr-wrap')?.classList.add('hidden');
+            }
         }
 
         modal.querySelectorAll('.invite-copy').forEach(btn => {

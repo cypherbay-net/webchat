@@ -177,6 +177,21 @@
                 <p class="prompt-line"><span class="prompt-user">root@cypherbay</span>:~$ <span class="prompt-cmd">git log --oneline</span></p>
                 <div class="changelog-entries">
 
+                    <div class="entry" data-primary="fix">
+                        <div class="entry-date">2026-07-08</div>
+                        <div class="entry-right">
+                            <div class="entry-tags">
+                                <span class="tag tag-fix">Fix</span>
+                            </div>
+                            <div class="entry-title">QR codes were unreadable by any scanner</div>
+                            <div class="entry-desc">
+                                The format info block was written in reversed bit order, so every generated QR code failed its checksum on real scanners.
+                                The encoder was also capped at 53 bytes, too small for a full session URL on most domains, silently corrupting the code.
+                                Both fixed and verified against an independent decoder.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="entry" data-primary="security">
                         <div class="entry-date">2026-06-30</div>
                         <div class="entry-right">

@@ -54,7 +54,7 @@ if (!is_dir($uploadDir)) {
     exit;
 }
 
-// Delete encrypted blobs older than 7 days on each upload
+// удаляем зашифрованные файлы старше 7 дней при каждой загрузке
 $cutoff = time() - 7 * 24 * 3600;
 foreach (glob($uploadDir . '/*') ?: [] as $f) {
     if (is_file($f) && filemtime($f) < $cutoff) @unlink($f);

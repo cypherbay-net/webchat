@@ -24,7 +24,7 @@ if (!file_exists($dataPath)) {
     exit('File not found or expired');
 }
 
-// Serve raw encrypted blob — client decrypts in browser
+// отдаём зашифрованный blob как есть — расшифровка происходит в браузере клиента
 header('Content-Type: application/octet-stream');
 header('Content-Length: ' . filesize($dataPath));
 header('Content-Disposition: attachment; filename="' . $id . '.bin"');
