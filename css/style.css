@@ -91,6 +91,12 @@ body {
     border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 [data-theme="light"] .topbar { border-bottom-color: rgba(0, 0, 0, 0.15); }
+.topbar-brand {
+    display: flex; align-items: center; gap: 0.4rem;
+    color: var(--text-muted); font-weight: 600; letter-spacing: 0.04em;
+}
+.topbar-brand .brand-icon { width: 14px; height: 14px; border-radius: 3px; }
+.topbar-right { display: flex; align-items: center; gap: 1.25rem; }
 .topbar-clock { color: var(--text-secondary); letter-spacing: 0.02em; }
 .topbar-nav { display: flex; gap: 1.25rem; }
 .topbar-nav a {
