@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/logo-full.png" alt="CypherBay" width="450">
+  <img src="img/logo-full.gif" alt="CypherBay" width="450">
 </p>
 
 <p align="center">
