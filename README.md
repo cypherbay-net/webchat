@@ -1,18 +1,31 @@
-# CypherBay
+<p align="center">
+<pre>
+  ____            _               ____
+ / ___|   _ _ __ | |__   ___ _ __| __ )  __ _ _   _
+| |  | | | | '_ \| '_ \ / _ \ '__|  _ \ / _` | | | |
+| |__| |_| | |_) | | | |  __/ |  | |_) | (_| | |_| |
+ \____\__, | .__/|_| |_|\___|_|  |____/ \__,_|\__, |
+      |___/|_|                                |___/
+</pre>
+</p>
 
 <p align="center">
   <strong>Anonymous, end-to-end encrypted web chat — no accounts, no logs</strong>
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/cypherbay-net/webchat?color=39ff14&style=flat-square" alt="MIT"></a>
-  <img src="https://img.shields.io/badge/PHP-7.4+-39ff14?style=flat-square">
-  <img src="https://img.shields.io/badge/Crypto-AES--256--GCM-39ff14?style=flat-square">
-  <img src="https://img.shields.io/badge/PBKDF2-310%2C000_iter-39ff14?style=flat-square">
-  <img src="https://img.shields.io/badge/dependencies-zero-39ff14?style=flat-square">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/cypherbay-net/webchat?color=ff93b7&style=flat-square" alt="MIT"></a>
+  <img src="https://img.shields.io/badge/PHP-7.4+-ff93b7?style=flat-square">
+  <img src="https://img.shields.io/badge/Crypto-AES--256--GCM-ff93b7?style=flat-square">
+  <img src="https://img.shields.io/badge/PBKDF2-310%2C000_iter-ff93b7?style=flat-square">
+  <img src="https://img.shields.io/badge/dependencies-zero-ff93b7?style=flat-square">
 </p>
 
 ---
+
+```
+root@cypherbay:~$ cat about.txt
+```
 
 CypherBay is a self-hosted, browser-based chat. No registration, no persistent accounts. Open a session, share the ID and a password out-of-band, and the conversation stays between you. The server stores only ciphertext it cannot read. Sessions and uploaded files auto-expire after one hour and seven days respectively.
 
