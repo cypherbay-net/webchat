@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog · CypherBay</title>
+    <meta name="description" content="Notes on privacy, encryption and policy that affects CypherBay.">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cypherbay.net/blog.html">
+    <meta property="og:title" content="Blog · CypherBay">
+    <meta property="og:description" content="Notes on privacy, encryption and policy that affects CypherBay.">
+    <meta property="og:site_name" content="CypherBay">
+    <meta property="og:image" content="https://cypherbay.net/img/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Blog · CypherBay">
+    <meta name="twitter:description" content="Notes on privacy, encryption and policy that affects CypherBay.">
+    <meta name="twitter:image" content="https://cypherbay.net/img/og-image.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .blog-content {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .blog-header {
+            margin-bottom: 2.5rem;
+        }
+        .blog-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+        }
+        .blog-header p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .post-preview {
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .post-preview:last-child { border-bottom: none; }
+        .post-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .post-preview h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0.4rem 0 0.6rem 0;
+            letter-spacing: 0.01em;
+        }
+        .post-preview h3 a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        .post-preview h3 a:hover {
+            color: var(--accent-primary);
+        }
+        .post-excerpt {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.65;
+        }
+        .tag-alert {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid rgba(255,95,87,0.35);
+            background: rgba(255,95,87,0.08);
+            color: #ff5f57;
+            margin-bottom: 0.5rem;
+        }
+        [data-theme="light"] .tag-alert { color: #cc2222; border-color: rgba(204,34,34,0.3); background: rgba(204,34,34,0.06); }
+        .tag-guide {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid rgba(95,217,122,0.35);
+            background: rgba(95,217,122,0.08);
+            color: #5fd97a;
+            margin-bottom: 0.5rem;
+        }
+        [data-theme="light"] .tag-guide { color: #1f9d4a; border-color: rgba(31,157,74,0.3); background: rgba(31,157,74,0.06); }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="page active">
+            <div class="terminal-wrapper">
+            <div class="terminal">
+            <div class="topbar">
+                <span class="topbar-brand"><img src="img/logo-icon.png" alt="" class="brand-icon">CypherBay</span>
+                <div class="topbar-right">
+                    <span class="topbar-clock">00:00:00</span>
+                    <nav class="topbar-nav">
+                        <a href="/">index</a>
+                        <a href="/changelog.html">changelog</a>
+                        <a href="/blog.html" class="active">blog</a>
+                    </nav>
+                </div>
+            </div>
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <a href="/" class="btn-back" style="position:static;transform:none;font-size:0.9rem;">&lt; Back</a>
+                    </div>
+                    <div class="header-center">
+                        <h1>CypherBay</h1>
+                        <p class="tagline">Blog</p>
+                    </div>
+                    <div class="header-right">
+                        <button id="theme-toggle" class="btn-theme" title="Toggle theme"></button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="blog-content">
+                <div class="blog-header">
+                    <h2>Blog</h2>
+                    <p>Notes on privacy, encryption and policy that affects CypherBay.</p>
+                </div>
+
+                <p class="prompt-line"><span class="prompt-user">root@cypherbay</span>:~$ <span class="prompt-cmd">ls posts/</span></p>
+
+                <div class="post-list">
+                    <article class="post-preview">
+                        <span class="tag-guide">Guide</span>
+                        <div class="post-date">2026-07-10</div>
+                        <h3><a href="/blog-protect-against-chat-control.html">How to protect yourself against Chat Control, and against Chat Control 2.0</a></h3>
+                        <p class="post-excerpt">Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under the far harsher CSAR proposal, and how to close the one gap no chat app can fix by itself: your IP address.</p>
+                    </article>
+                    <article class="post-preview">
+                        <span class="tag-alert">Warning</span>
+                        <div class="post-date">2026-07-10</div>
+                        <h3><a href="/blog-eu-chat-control-vote.html">The EU just passed Chat Control. Chat Control 2.0 is worse, and it is coming.</a></h3>
+                        <p class="post-excerpt">On 9 July 2026 the European Parliament extended mass message scanning through a procedural trick that let a rejected motion pass anyway. That vote is nothing compared to what CSAR, the regulation everyone calls Chat Control 2.0, would actually do to every encrypted conversation in Europe. Here is what happened, what is coming next, and why we will never help build it.</p>
+                    </article>
+                </div>
+            </main>
+
+            <footer>
+                <p>CypherBay &mdash; <a href="/">Back to app</a></p>
+            </footer>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem('cypherbay-theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('theme-toggle');
+            function updateIcon(theme) {
+                btn.innerHTML = theme === 'light'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+            }
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            updateIcon(current);
+            btn.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('cypherbay-theme', next);
+                updateIcon(next);
+            });
+        })();
+    </script>
+    <script src="js/clock.js"></script>
+</body>
+</html>

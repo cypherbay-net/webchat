@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to protect yourself against Chat Control · CypherBay Blog</title>
+    <meta name="description" content="Why CypherBay is already immune to Chat Control 1.0, what self-hosting shields you from under Chat Control 2.0 (CSAR), and how to close the IP gap with Tor Browser or a no-logs VPN.">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://cypherbay.net/blog-protect-against-chat-control.html">
+    <meta property="og:title" content="How to protect yourself against Chat Control, and Chat Control 2.0">
+    <meta property="og:description" content="Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under CSAR, and how to close the IP gap.">
+    <meta property="og:site_name" content="CypherBay">
+    <meta property="og:image" content="https://cypherbay.net/img/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How to protect yourself against Chat Control, and Chat Control 2.0">
+    <meta name="twitter:description" content="Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under CSAR, and how to close the IP gap.">
+    <meta name="twitter:image" content="https://cypherbay.net/img/og-image.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .article-content {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .article-meta {
+            margin-bottom: 2rem;
+        }
+        .tag-guide {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid rgba(95,217,122,0.35);
+            background: rgba(95,217,122,0.08);
+            color: #5fd97a;
+            margin-bottom: 0.6rem;
+        }
+        [data-theme="light"] .tag-guide { color: #1f9d4a; border-color: rgba(31,157,74,0.3); background: rgba(31,157,74,0.06); }
+        .article-content h1 {
+            font-size: 1.6rem;
+            line-height: 1.35;
+            color: var(--text-primary);
+            margin: 0.5rem 0 0.5rem 0;
+        }
+        .article-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .article-body p {
+            font-size: 0.95rem;
+            line-height: 1.75;
+            color: var(--text-secondary);
+        }
+        .article-body h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2.5rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.01em;
+        }
+        .article-body ul {
+            padding-left: 1.25rem;
+            margin: 1rem 0;
+        }
+        .article-body li {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin-bottom: 0.6rem;
+        }
+        .article-body strong {
+            color: var(--text-primary);
+        }
+        .note-box {
+            margin: 2rem 0;
+            padding: 1.25rem 1.5rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+        .note-box p:last-child { margin-bottom: 0; }
+        .disclosure {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 2.5rem;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="page active">
+            <div class="terminal-wrapper">
+            <div class="terminal">
+            <div class="topbar">
+                <span class="topbar-brand"><img src="img/logo-icon.png" alt="" class="brand-icon">CypherBay</span>
+                <div class="topbar-right">
+                    <span class="topbar-clock">00:00:00</span>
+                    <nav class="topbar-nav">
+                        <a href="/">index</a>
+                        <a href="/changelog.html">changelog</a>
+                        <a href="/blog.html" class="active">blog</a>
+                    </nav>
+                </div>
+            </div>
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <a href="/blog.html" class="btn-back" style="position:static;transform:none;font-size:0.9rem;">&lt; Back</a>
+                    </div>
+                    <div class="header-center">
+                        <h1>CypherBay</h1>
+                        <p class="tagline">Blog</p>
+                    </div>
+                    <div class="header-right">
+                        <button id="theme-toggle" class="btn-theme" title="Toggle theme"></button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="article-content">
+                <article>
+                    <div class="article-meta">
+                        <span class="tag-guide">Guide</span>
+                        <h1>How to protect yourself against Chat Control, and against Chat Control 2.0</h1>
+                        <span class="article-date">2026-07-10</span>
+                    </div>
+
+                    <div class="article-body">
+                    <p>Chat Control is really two separate threats stacked on top of each other: the voluntary scanning regime that just got extended, and CSAR, the mandatory scanning regime still being negotiated and commonly called Chat Control 2.0. We covered the vote itself in <a href="/blog-eu-chat-control-vote.html">our last post</a>. This one is more useful: exactly why CypherBay is already immune to the first, what would actually have to change for the second to reach it, and what you can add on top for the one thing no chat app can fix for you by itself.</p>
+
+                    <h2>Why Chat Control 1.0 already fails against CypherBay</h2>
+                    <p>The current exemption works by letting platforms voluntarily scan content they can already read. Meta and Google can do this because their servers hold your messages and photos in plaintext, or hold a key that can decrypt them on demand.</p>
+                    <p>CypherBay never has that option. Every message and file is encrypted in your browser with AES-256-GCM before it ever leaves your device, and the encryption key is derived from your password locally, it never touches the server. What reaches us is ciphertext: unreadable, unstructured bytes. There is no algorithm that can scan content for patterns it never receives in readable form. Chat Control 1.0 is built to regulate what providers do with data they can read. We simply never have that data, so the regulation has nothing to act on.</p>
+
+                    <h2>What self-hosting shields you from under Chat Control 2.0</h2>
+                    <p>CSAR is a different problem, because its harshest drafts do not ask providers to scan data they already have, they would force scanning before encryption ever happens, directly on the device. That is a real threat to any hosted, commercial encrypted service, ours included, if it is ever passed in that form.</p>
+                    <p>This is where self-hosting changes the equation. EU platform regulation, CSAR included, is written to govern commercial communication service providers: companies operating messaging infrastructure at scale for the public. If you download CypherBay and run it on your own webspace, for yourself and the people you personally invite, you are not operating a commercial communication service. You are running a private, single-purpose piece of infrastructure that never advertises, never onboards the public, and never appears on anyone's radar as a platform to regulate. Nobody is going to send an inspector to force a private individual's personal PHP server to install a client-side scanning hook. The legal machinery being built simply is not aimed at that scale, and realistically cannot be.</p>
+                    <p>There is a second, quieter protection in being fully web-based instead of a native app: there is no App Store or Play Store listing at all. Governments have leaned on Apple and Google before to pressure or threaten to remove messaging apps that refuse to add backdoors, a scenario Signal has publicly warned about. A page that runs entirely in the browser cannot be pulled from a store, because it was never in one.</p>
+
+                    <h2>What else protects you, beyond scanning</h2>
+                    <ul>
+                        <li><strong>No accounts, no identity.</strong> No phone number, no email, nothing to subpoena from a third party. Just a self-chosen alias and a cryptographic session ID. Even a full server seizure gives an investigator ciphertext and aliases, not real identities.</li>
+                        <li><strong>Ephemeral by design.</strong> Sessions self-destruct after an hour of inactivity. There is no permanent chat history sitting on disk, waiting for a raid or a data breach to expose it later.</li>
+                        <li><strong>Zero friction for the other side.</strong> Nobody you talk to needs to install anything, register anything, or understand cryptography. A link and a password shared through a separate channel is the entire setup.</li>
+                    </ul>
+
+                    <h2>What CypherBay still cannot protect you from</h2>
+                    <p>We would rather tell you this plainly than let you assume more than the tool actually delivers.</p>
+                    <p>The server sees the IP address of everyone who connects, ours included if you use the public instance. And if you use <a href="https://cypherbay.net" target="_blank" rel="noopener">cypherbay.net</a> instead of hosting it yourself, you are trusting whoever operates that server not to quietly serve you a tampered version of the client-side code. Encryption running in your browser is only as trustworthy as the code the server sent you that day. A compromised or legally coerced server could serve malicious JavaScript that captures your password before encryption ever runs, and you would have no way to see it happening. Self-hosting removes that trust requirement entirely, because you control the server that serves the code.</p>
+
+                    <h2>Closing the IP gap: Tor Browser, or a no-logs VPN</h2>
+                    <p>For the strongest option, use <a href="https://www.torproject.org/" target="_blank" rel="noopener">Tor Browser</a>. Onion routing means no single party, not us, not your ISP, ever sees both who you are and what you connected to. It is slower, and some networks throttle or block it, which is the honest tradeoff.</p>
+                    <p>When Tor is not practical, a VPN is a reasonable middle ground for hiding your IP from the server operator and your network. We use, and recommend, <a href="https://mullvad.net" target="_blank" rel="noopener">Mullvad VPN</a>:</p>
+                    <ul>
+                        <li>No email, name, or payment details required to use it. You get a randomly generated account number, and you can pay with cash sent by mail or with Monero.</li>
+                        <li>Independently audited no-logs policy, repeated across multiple third-party audits.</li>
+                        <li>Fully open source apps on every platform, so the client's behavior is not something you have to take on faith.</li>
+                        <li>One flat price for everyone, no tiered plans designed to upsell you.</li>
+                        <li>WireGuard-based and fast enough that you will not be tempted to switch it off.</li>
+                        <li>Has previously confirmed that when authorities came asking, there was nothing to hand over, because they never log connection data to begin with.</li>
+                    </ul>
+                    <p class="disclosure">This is not sponsored. We are not paid, and there is no referral code or affiliate link anywhere in this post. We recommend Mullvad because its entire design philosophy, minimize what you know about your users so there is nothing to hand over even if compelled, is the same principle CypherBay is built on, and because we actually use it ourselves. ProtonVPN and IVPN are other audited, no-logs options worth a look if Mullvad does not fit your needs.</p>
+
+                    <div class="note-box">
+                        <p>None of this is legal armor. It is engineering: remove the data, remove the identity, remove the single point of trust, and there is nothing left for a scanning mandate to act on. Self-hosted, over Tor or a trustworthy VPN, is the closest thing to a complete answer that exists today. We will keep building toward making that setup as easy as the public instance already is.</p>
+                    </div>
+
+                    <a class="back-link" href="/blog.html">&lt; Back to blog</a>
+                    </div>
+                </article>
+            </main>
+
+            <footer>
+                <p>CypherBay &mdash; <a href="/">Back to app</a></p>
+            </footer>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem('cypherbay-theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('theme-toggle');
+            function updateIcon(theme) {
+                btn.innerHTML = theme === 'light'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+            }
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            updateIcon(current);
+            btn.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('cypherbay-theme', next);
+                updateIcon(next);
+            });
+        })();
+    </script>
+    <script src="js/clock.js"></script>
+</body>
+</html>
