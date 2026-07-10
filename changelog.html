@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Changelog — CypherBay</title>
+    <title>Changelog · CypherBay</title>
     <meta name="description" content="Release history and changelog for CypherBay, the anonymous end-to-end encrypted web chat.">
     <meta name="robots" content="noindex">
 
-    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://cypherbay.net/changelog.html">
-    <meta property="og:title" content="Changelog — CypherBay">
+    <meta property="og:title" content="Changelog · CypherBay">
     <meta property="og:description" content="Release history for CypherBay: security fixes, features and design changes.">
     <meta property="og:site_name" content="CypherBay">
     <meta property="og:image" content="https://cypherbay.net/img/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="CypherBay — anonymous end-to-end encrypted chat">
+    <meta property="og:image:alt" content="CypherBay: anonymous end-to-end encrypted chat">
 
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Changelog — CypherBay">
+    <meta name="twitter:title" content="Changelog · CypherBay">
     <meta name="twitter:description" content="Release history for CypherBay: security fixes, features and design changes.">
     <meta name="twitter:image" content="https://cypherbay.net/img/og-image.png">
-    <meta name="twitter:image:alt" content="CypherBay — anonymous end-to-end encrypted chat">
+    <meta name="twitter:image:alt" content="CypherBay: anonymous end-to-end encrypted chat">
 
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
@@ -149,7 +147,7 @@
             color: var(--accent-primary);
         }
 
-        /* highlight dot color by primary tag */
+        /* цвет индикатора зависит от основного тега */
         .entry[data-primary="security"] .entry-right::before { border-color: #ff5f57; background: rgba(255,95,87,0.25); }
         .entry[data-primary="feature"]  .entry-right::before { border-color: var(--accent-primary); background: rgba(255,147,183,0.2); }
         .entry[data-primary="fix"]      .entry-right::before { border-color: #f5c542; background: rgba(245,197,66,0.2); }
@@ -184,7 +182,7 @@
             <header>
                 <div class="header-content">
                     <div class="header-left">
-                        <a href="/" class="btn-back" style="position:static;transform:none;font-size:0.9rem;">&lt; Back</a>
+                        <a href="/" class="btn-back btn-back--static">&lt; Back</a>
                     </div>
                     <div class="header-center">
                         <h1>CypherBay</h1>
@@ -260,7 +258,7 @@
                             <div class="entry-title">Client-side file encryption</div>
                             <div class="entry-desc">
                                 Files are now encrypted with AES-256-GCM in the browser before upload.
-                                The server receives and stores only an opaque binary blob — no filename, no MIME type, no readable content.
+                                The server receives and stores only an opaque binary blob: no filename, no MIME type, no readable content.
                                 Decryption happens in the receiver's browser using the shared session password.
                                 Anyone with a direct file URL sees random bytes.
                             </div>
@@ -323,8 +321,8 @@
                             <div class="entry-desc">
                                 The QR library previously only supported alphanumeric mode, which excludes the <code>#</code> character.
                                 Byte mode encoding was added so full URLs including the hash fragment can be encoded.
-                                Separately, the invite modal was passing only the session ID to the QR renderer instead of the full URL —
-                                iPhone Camera saw plain text, not a link.
+                                Separately, the invite modal was passing only the session ID to the QR renderer instead of the full URL,
+                                so iPhone Camera saw plain text, not a link.
                             </div>
                         </div>
                     </div>
@@ -353,7 +351,7 @@
                             </div>
                             <div class="entry-title">Rate limiting hardened across all endpoints</div>
                             <div class="entry-desc">
-                                Typing events are excluded from rate limiting — previously they consumed the same bucket as messages,
+                                Typing events are excluded from rate limiting: previously they consumed the same bucket as messages,
                                 making it trivial to exhaust the limit without sending anything.
                                 Separate per-IP buckets now exist for <code>send</code>, <code>upload</code>, and <code>delete</code>.
                                 Rate limiting added to <code>upload.php</code> (5/min) and <code>delete.php</code> (10/min), which were previously uncapped.
@@ -368,7 +366,7 @@
                                 <span class="tag tag-security">Security</span>
                                 <span class="tag tag-fix">Fix</span>
                             </div>
-                            <div class="entry-title">Security audit — header injection, file locking, PHP logic</div>
+                            <div class="entry-title">Security audit: header injection, file locking, PHP logic</div>
                             <div class="entry-desc">
                                 Fixed header injection in <code>upload.php</code>: filename was passed raw into MIME headers.
                                 Added shared file locking (<code>LOCK_SH</code>) when reading session files to prevent race conditions with concurrent writes.
@@ -388,7 +386,7 @@
                             </div>
                             <div class="entry-title">UI redesign and per-minute message counter</div>
                             <div class="entry-desc">
-                                Primary text changed from neon green <code>#39ff14</code> to near-white <code>#ddeedd</code> — green is now reserved for UI chrome and accents only.
+                                Primary text changed from neon green <code>#39ff14</code> to near-white <code>#ddeedd</code>, green is now reserved for UI chrome and accents only.
                                 Bracket notation (<code>[COPY]</code>, <code>[E2E]</code>) replaced with inline SVG icons.
                                 Chat layout fixed with proper flexbox constraints.
                                 Added a live message counter showing remaining sends before the per-minute rate limit.
@@ -401,7 +399,7 @@
             </main>
 
             <footer>
-                <p>CypherBay &mdash; <a href="/">Back to app</a></p>
+                <p>CypherBay &nbsp;&middot;&nbsp; <a href="/">Back to app</a></p>
             </footer>
             </div>
             </div>

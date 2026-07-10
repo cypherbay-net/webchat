@@ -58,7 +58,7 @@ if (!is_dir($dataDir)) {
 
 $sessionFile = $dataDir . '/' . $sessionId . '.json';
 
-// режим 'x': эксклюзивное создание — ошибка, если файл уже существует
+// режим 'x': эксклюзивное создание, ошибка, если файл уже существует
 $fp = @fopen($sessionFile, 'x');
 if (!$fp) {
     http_response_code(409);

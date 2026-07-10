@@ -300,6 +300,7 @@ main { flex: 1; padding: 2rem 2rem; max-width: 960px; margin: 0 auto; width: 100
     transition: all 0.2s ease; letter-spacing: 0.03em;
 }
 .btn-back:hover { opacity: 0.75; }
+.btn-back--static { position: static; transform: none; }
 
 .btn-icon {
     background: none; border: 1px solid var(--border-color); border-radius: 0;
@@ -687,9 +688,11 @@ footer a:hover { color: var(--accent-primary); }
         clip: auto; white-space: normal;
     }
     .tagline { font-size: 0.78rem; }
-    .header-left, .header-right { width: 50px; }
-    .topbar { padding: 0.5rem 1rem; font-size: 0.72rem; }
-    .topbar-nav { gap: 0.85rem; }
+    .header-left { width: 60px; }
+    .header-right { width: 76px; }
+    .topbar { padding: 0.5rem 0.75rem; font-size: 0.7rem; }
+    .topbar-nav { gap: 0.7rem; }
+    .topbar-right { gap: 0.75rem; }
     main { padding: 1.25rem 1rem; }
     .landing-content { gap: 2rem; }
     .features { grid-template-columns: 1fr; gap: 0; }
@@ -702,6 +705,7 @@ footer a:hover { color: var(--accent-primary); }
     .input-with-action button { flex: 1; }
     .chat-header { flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1rem; }
     .btn-back { position: static; transform: none; padding: 0.5rem 0.75rem; font-size: 0.9rem; }
+    .btn-back--static { padding: 0.5rem 0; font-size: 0.8rem; white-space: nowrap; }
     .chat-info { order: 3; width: 100%; justify-content: center; }
     .message { max-width: 88%; }
     .alias-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.75rem 1rem; }
@@ -718,4 +722,15 @@ footer a:hover { color: var(--accent-primary); }
     main { padding: 1rem 0.75rem; }
     .message-form { flex-direction: column; }
     .message-form button[type="submit"] { width: 100%; }
+    .topbar-clock { display: none; }
+    .topbar-brand { font-size: 0.68rem; }
+    .topbar-nav { gap: 0.6rem; }
+    .topbar-nav a { font-size: 0.68rem; }
+    .header-left { width: 52px; }
+    .header-right { width: 68px; }
+}
+
+@media (max-width: 360px) {
+    .topbar-brand span, .topbar-brand { font-size: 0.62rem; }
+    .topbar-nav { gap: 0.5rem; }
 }

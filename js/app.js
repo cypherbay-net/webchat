@@ -508,7 +508,7 @@
                 elements.messageInput.value = '';
                 elements.messageInput.style.height = 'auto';
             } else if (response.status === 429) {
-                showToast('Rate limit — wait a moment');
+                showToast('Rate limit: wait a moment');
             } else {
                 addSystemMessage('Message could not be sent.');
             }
@@ -551,7 +551,7 @@
             elements.uploadProgress.classList.remove('hidden');
             elements.btnAttach.disabled = true;
 
-            // шифруем файл на клиенте перед загрузкой — сервер хранит только непрозрачный blob
+            // шифруем файл на клиенте перед загрузкой, сервер хранит только непрозрачный blob
             const iv = crypto.getRandomValues(new Uint8Array(12));
             const ciphertext = await crypto.subtle.encrypt(
                 { name: 'AES-GCM', iv },

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Anonymous, end-to-end encrypted web chat — no accounts, no logs</strong>
+  <strong>Anonymous, end-to-end encrypted web chat, no accounts, no logs</strong>
 </p>
 
 <p align="center">
@@ -24,15 +24,15 @@ CypherBay is a self-hosted, browser-based chat. No registration, no persistent a
 
 ## Crypto
 
-All encryption runs entirely in the browser via the Web Crypto API — no crypto library, no server-side keys.
+All encryption runs entirely in the browser via the Web Crypto API: no crypto library, no server-side keys.
 
 **Messages:** Keys are derived with PBKDF2-SHA256 at 310,000 iterations, salted with `CypherBay-v2-<sessionId>`. Each message is encrypted with AES-256-GCM using a fresh random 96-bit IV. What reaches the server is `base64(IV ‖ ciphertext)`. The password never leaves the client.
 
-**Files:** Before upload, files are encrypted in the browser with the same AES-256-GCM session key. The server receives and stores an opaque binary blob — no filename, no MIME type, no readable content. Decryption happens in the receiver's browser. Anyone with a direct file URL sees random bytes.
+**Files:** Before upload, files are encrypted in the browser with the same AES-256-GCM session key. The server receives and stores an opaque binary blob: no filename, no MIME type, no readable content. Decryption happens in the receiver's browser. Anyone with a direct file URL sees random bytes.
 
 ## Limitations
 
-The server sees your IP address and connection timestamps. If real anonymity matters, use Tor Browser. The session ID and password must be shared through a separate channel — sending the password in the chat defeats the purpose. This is not a replacement for Signal.
+The server sees your IP address and connection timestamps. If real anonymity matters, use Tor Browser. The session ID and password must be shared through a separate channel; sending the password in the chat defeats the purpose. This is not a replacement for Signal.
 
 ## Setup
 
@@ -114,21 +114,21 @@ cypherbay/
 ├── changelog.html
 ├── css/style.css
 ├── js/
-│   ├── app.js          — UI, polling, message handling, file encryption
-│   ├── crypto.js       — PBKDF2 + AES-256-GCM via Web Crypto API
-│   └── qrcode.js       — QR code renderer (alphanumeric + byte mode, no deps)
+│   ├── app.js          : UI, polling, message handling, file encryption
+│   ├── crypto.js       : PBKDF2 + AES-256-GCM via Web Crypto API
+│   └── qrcode.js       : QR code renderer (alphanumeric + byte mode, no deps)
 ├── api/
-│   ├── send.php        — store encrypted message or typing signal
-│   ├── messages.php    — fetch messages since timestamp
-│   ├── upload.php      — store encrypted file blob locally
-│   ├── file.php        — serve encrypted file blob by ID
-│   ├── delete.php      — delete a session
-│   ├── cleanup.php     — CLI: remove expired sessions
-│   └── ratelimit.php   — file-based per-IP rate limiter
+│   ├── send.php        : store encrypted message or typing signal
+│   ├── messages.php    : fetch messages since timestamp
+│   ├── upload.php      : store encrypted file blob locally
+│   ├── file.php        : serve encrypted file blob by ID
+│   ├── delete.php      : delete a session
+│   ├── cleanup.php     : CLI, remove expired sessions
+│   └── ratelimit.php   : file-based per-IP rate limiter
 └── data/
-    ├── sessions/       — one JSON file per active session (auto-expire 1h)
-    ├── uploads/        — encrypted file blobs (auto-expire 7d)
-    └── ratelimit/      — one JSON file per IP per endpoint
+    ├── sessions/       : one JSON file per active session (auto-expire 1h)
+    ├── uploads/        : encrypted file blobs (auto-expire 7d)
+    └── ratelimit/      : one JSON file per IP per endpoint
 ```
 
 ## How messages flow
@@ -152,8 +152,8 @@ send URL in message ────────────────────
                                                 display inline
 ```
 
-The server is a dumb relay. It never sees plaintext — not for messages, not for files.
+The server is a dumb relay. It never sees plaintext: not for messages, not for files.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
