@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog · CypherBay</title>
     <meta name="description" content="Notes on privacy, encryption and policy that affects CypherBay.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cypherbay.net/blog.html">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://cypherbay.net/blog.html">
@@ -73,33 +75,49 @@
             font-size: 0.88rem;
             line-height: 1.65;
         }
-        .tag-alert {
-            display: inline-block;
-            font-size: 0.65rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 0.15rem 0.5rem;
-            border: 1px solid rgba(255,95,87,0.35);
-            background: rgba(255,95,87,0.08);
-            color: #ff5f57;
-            margin-bottom: 0.5rem;
-        }
-        [data-theme="light"] .tag-alert { color: #cc2222; border-color: rgba(204,34,34,0.3); background: rgba(204,34,34,0.06); }
-        .tag-guide {
-            display: inline-block;
-            font-size: 0.65rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 0.15rem 0.5rem;
-            border: 1px solid rgba(95,217,122,0.35);
-            background: rgba(95,217,122,0.08);
-            color: #5fd97a;
-            margin-bottom: 0.5rem;
-        }
-        [data-theme="light"] .tag-guide { color: #1f9d4a; border-color: rgba(31,157,74,0.3); background: rgba(31,157,74,0.06); }
     </style>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Blog",
+                "@id": "https://cypherbay.net/blog.html",
+                "name": "CypherBay Blog",
+                "url": "https://cypherbay.net/blog.html",
+                "description": "Notes on privacy, encryption and policy that affects CypherBay.",
+                "publisher": {
+                    "@type": "Organization",
+                    "name": "CypherBay",
+                    "url": "https://cypherbay.net/",
+                    "logo": { "@type": "ImageObject", "url": "https://cypherbay.net/img/logo-full.png" }
+                },
+                "blogPost": [
+                    {
+                        "@type": "BlogPosting",
+                        "headline": "How to protect yourself against Chat Control, and against Chat Control 2.0",
+                        "url": "https://cypherbay.net/blog-protect-against-chat-control.html",
+                        "datePublished": "2026-07-10"
+                    },
+                    {
+                        "@type": "BlogPosting",
+                        "headline": "The EU just passed Chat Control. Chat Control 2.0 is worse, and it is coming.",
+                        "url": "https://cypherbay.net/blog-eu-chat-control-vote.html",
+                        "datePublished": "2026-07-10"
+                    }
+                ]
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    { "@type": "ListItem", "position": 1, "name": "CypherBay", "item": "https://cypherbay.net/" },
+                    { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://cypherbay.net/blog.html" }
+                ]
+            }
+        ]
+    }
+    </script>
 </head>
 <body>
     <div id="app">
@@ -142,13 +160,11 @@
 
                 <div class="post-list">
                     <article class="post-preview">
-                        <span class="tag-guide">Guide</span>
                         <div class="post-date">2026-07-10</div>
                         <h3><a href="/blog-protect-against-chat-control.html">How to protect yourself against Chat Control, and against Chat Control 2.0</a></h3>
                         <p class="post-excerpt">Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under the far harsher CSAR proposal, and how to close the rest of the gap: Tor or a no-logs VPN, GrapheneOS on mobile, and Linux on desktop.</p>
                     </article>
                     <article class="post-preview">
-                        <span class="tag-alert">Warning</span>
                         <div class="post-date">2026-07-10</div>
                         <h3><a href="/blog-eu-chat-control-vote.html">The EU just passed Chat Control. Chat Control 2.0 is worse, and it is coming.</a></h3>
                         <p class="post-excerpt">On 9 July 2026 the European Parliament extended mass message scanning through a procedural trick that let a rejected motion pass anyway. That vote is nothing compared to what CSAR, the regulation everyone calls Chat Control 2.0, would actually do to every encrypted conversation in Europe. Here is what happened, what is coming next, and why we will never help build it.</p>

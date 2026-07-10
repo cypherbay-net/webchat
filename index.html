@@ -37,6 +37,48 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
     <meta name="referrer" content="no-referrer">
     <link rel="stylesheet" href="css/style.css">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://cypherbay.net/#organization",
+                "name": "CypherBay",
+                "url": "https://cypherbay.net/",
+                "logo": "https://cypherbay.net/img/logo-full.png",
+                "description": "CypherBay is a free, anonymous, end-to-end encrypted web chat with no registration and no tracking.",
+                "sameAs": [
+                    "https://github.com/cypherbay-net/webchat"
+                ]
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://cypherbay.net/#website",
+                "name": "CypherBay",
+                "url": "https://cypherbay.net/",
+                "description": "CypherBay is a free, anonymous, end-to-end encrypted web chat. No registration, no account, no tracking.",
+                "publisher": { "@id": "https://cypherbay.net/#organization" },
+                "inLanguage": "en"
+            },
+            {
+                "@type": "WebApplication",
+                "name": "CypherBay",
+                "url": "https://cypherbay.net/",
+                "applicationCategory": "CommunicationApplication",
+                "operatingSystem": "Any (web-based)",
+                "description": "Anonymous end-to-end encrypted web chat with AES-256-GCM encryption. No registration, no account, sessions auto-delete after 1 hour.",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "USD"
+                },
+                "publisher": { "@id": "https://cypherbay.net/#organization" }
+            }
+        ]
+    }
+    </script>
 </head>
 <body>
     <div id="app">
