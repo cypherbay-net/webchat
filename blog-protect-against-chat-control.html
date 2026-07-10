@@ -6,20 +6,18 @@
     <title>How to protect yourself against Chat Control · CypherBay Blog</title>
     <meta name="description" content="Why CypherBay is already immune to Chat Control 1.0, what self-hosting shields you from under Chat Control 2.0 (CSAR), and how to close the IP gap with Tor Browser or a no-logs VPN.">
 
-    <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://cypherbay.net/blog-protect-against-chat-control.html">
     <meta property="og:title" content="How to protect yourself against Chat Control, and Chat Control 2.0">
-    <meta property="og:description" content="Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under CSAR, and how to close the IP gap.">
+    <meta property="og:description" content="Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under CSAR, and how to harden the rest of your setup: Tor, a no-logs VPN, GrapheneOS, and Linux.">
     <meta property="og:site_name" content="CypherBay">
     <meta property="og:image" content="https://cypherbay.net/img/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
 
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="How to protect yourself against Chat Control, and Chat Control 2.0">
-    <meta name="twitter:description" content="Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under CSAR, and how to close the IP gap.">
+    <meta name="twitter:description" content="Why CypherBay is already immune to voluntary scanning, what self-hosting shields you from under CSAR, and how to harden the rest of your setup: Tor, a no-logs VPN, GrapheneOS, and Linux.">
     <meta name="twitter:image" content="https://cypherbay.net/img/og-image.png">
 
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
@@ -123,7 +121,7 @@
             <header>
                 <div class="header-content">
                     <div class="header-left">
-                        <a href="/blog.html" class="btn-back" style="position:static;transform:none;font-size:0.9rem;">&lt; Back</a>
+                        <a href="/blog.html" class="btn-back btn-back--static">&lt; Back</a>
                     </div>
                     <div class="header-center">
                         <h1>CypherBay</h1>
@@ -179,6 +177,16 @@
                     </ul>
                     <p class="disclosure">This is not sponsored. We are not paid, and there is no referral code or affiliate link anywhere in this post. We recommend Mullvad because its entire design philosophy, minimize what you know about your users so there is nothing to hand over even if compelled, is the same principle CypherBay is built on, and because we actually use it ourselves. ProtonVPN and IVPN are other audited, no-logs options worth a look if Mullvad does not fit your needs.</p>
 
+                    <h2>The operating system underneath matters too</h2>
+                    <p>Client-side scanning, if CSAR ever forces it, would not run inside CypherBay. It would run in your operating system, or in the layer between your OS and the app: the same layer that already quietly scans your photos today. Stock Android backs up to Google Photos by default, and Google has run CSAM scanning against that library for years. iOS does the equivalent through iCloud Photos. This is not new, and it is not CSAR, but it shows exactly where scanning actually gets bolted on: not the chat app you're worried about, the platform underneath it that you never chose to audit.</p>
+                    <p>Two changes here do more for your baseline privacy than almost anything else on this list:</p>
+                    <ul>
+                        <li><strong>On mobile, use <a href="https://grapheneos.org/" target="_blank" rel="noopener">GrapheneOS</a>.</strong> It is a hardened, de-googled Android fork with no Google services, telemetry, or bloatware baked in. If you need specific Google-dependent apps, its sandboxed Google Play runs them as a normal, permission-limited app with zero system-level access, instead of the privileged position Play Services normally holds. It ships with a hardened memory allocator and dozens of exploit-mitigation features on top of stock Android, not just app removal. Most day-to-day apps work fine; a handful of banking apps and Google Pay do not, by design, since those specifically check for the privileged access GrapheneOS refuses to grant.</li>
+                        <li><strong>On desktop, use Linux instead of Windows or macOS.</strong> You are not fighting a single scanning feature, you are removing the always-on telemetry, cloud photo sync, and account-linked backup layers that Windows and macOS ship with by default. <a href="https://fedoraproject.org/" target="_blank" rel="noopener">Fedora</a> is a reasonable, low-friction default: it runs SELinux enforcing out of the box and defaults to Wayland, which isolates applications from each other far better than the old X11 display server most people still associate with Linux. If you occasionally need a session that leaves no trace at all, boot <a href="https://tails.net/" target="_blank" rel="noopener">Tails</a> from a USB stick: it forces all traffic through Tor and forgets everything the moment you shut it down. If you handle genuinely sensitive material as a matter of routine, <a href="https://www.qubes-os.org/" target="_blank" rel="noopener">Qubes OS</a> compartmentalizes everything into isolated virtual machines, so a compromise in one part of your digital life cannot casually reach into another.</li>
+                        <li><strong>Turn on full-disk encryption, on whatever you end up running.</strong> LUKS on Linux, or the equivalent on any OS you use. It is one setting during installation, and it is the difference between a stolen or seized device being a locked box versus an open book.</li>
+                    </ul>
+                    <p>None of this is exotic anymore. GrapheneOS installs like any other Android image, Fedora installs like any other desktop OS, and the friction is smaller than most people assume before actually trying it.</p>
+
                     <div class="note-box">
                         <p>None of this is legal armor. It is engineering: remove the data, remove the identity, remove the single point of trust, and there is nothing left for a scanning mandate to act on. Self-hosted, over Tor or a trustworthy VPN, is the closest thing to a complete answer that exists today. We will keep building toward making that setup as easy as the public instance already is.</p>
                     </div>
@@ -189,7 +197,7 @@
             </main>
 
             <footer>
-                <p>CypherBay &mdash; <a href="/">Back to app</a></p>
+                <p>CypherBay &nbsp;&middot;&nbsp; <a href="/">Back to app</a></p>
             </footer>
             </div>
             </div>
