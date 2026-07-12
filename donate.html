@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donate · CypherBay</title>
+    <meta name="description" content="Support CypherBay with a Monero donation. Pay with any coin through Trocador AnonPay, we only ever receive XMR, no accounts, no tracking, no donor records.">
+    <meta name="author" content="CypherBay">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cypherbay.net/donate.html">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cypherbay.net/donate.html">
+    <meta property="og:title" content="Donate · CypherBay">
+    <meta property="og:description" content="Support CypherBay with a Monero donation. Pay with any coin through Trocador AnonPay, we only ever receive XMR.">
+    <meta property="og:site_name" content="CypherBay">
+    <meta property="og:image" content="https://cypherbay.net/img/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Donate · CypherBay">
+    <meta name="twitter:description" content="Support CypherBay with a Monero donation. Pay with any coin through Trocador AnonPay, we only ever receive XMR.">
+    <meta name="twitter:image" content="https://cypherbay.net/img/og-image.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; frame-src https://trocador.app; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
+    <meta name="referrer" content="no-referrer">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .donate-content {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .donate-content h1 {
+            font-size: 1.6rem;
+            line-height: 1.35;
+            color: var(--text-primary);
+            margin: 0 0 1.5rem 0;
+        }
+        .donate-body p {
+            font-size: 0.95rem;
+            line-height: 1.75;
+            color: var(--text-secondary);
+        }
+        .donate-body h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2.5rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.01em;
+        }
+        .donate-widget-wrap {
+            margin: 1.75rem 0 0.75rem 0;
+            max-width: 360px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            overflow: hidden;
+        }
+        .donate-widget-wrap iframe {
+            display: block;
+        }
+        .widget-fallback {
+            font-size: 0.8rem !important;
+            color: var(--text-muted) !important;
+            margin-bottom: 1.75rem;
+        }
+        .address-box {
+            margin: 1rem 0 1.75rem 0;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .address-label {
+            display: block;
+            font-family: inherit;
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+        .note-box {
+            margin: 2rem 0;
+            padding: 1.25rem 1.5rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+        .note-box p:last-child { margin-bottom: 0; }
+        .back-link {
+            display: inline-block;
+            margin-top: 2.5rem;
+            font-size: 0.85rem;
+        }
+    </style>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://cypherbay.net/#organization",
+                "name": "CypherBay",
+                "url": "https://cypherbay.net/",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://cypherbay.net/img/logo-full.png"
+                }
+            },
+            {
+                "@type": "WebPage",
+                "@id": "https://cypherbay.net/donate.html",
+                "name": "Donate · CypherBay",
+                "url": "https://cypherbay.net/donate.html",
+                "description": "Support CypherBay with a Monero donation. Pay with any coin through Trocador AnonPay, we only ever receive XMR.",
+                "isPartOf": { "@id": "https://cypherbay.net/#organization" }
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    { "@type": "ListItem", "position": 1, "name": "CypherBay", "item": "https://cypherbay.net/" },
+                    { "@type": "ListItem", "position": 2, "name": "Donate", "item": "https://cypherbay.net/donate.html" }
+                ]
+            }
+        ]
+    }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <div class="page active">
+            <div class="terminal-wrapper">
+            <div class="terminal">
+            <div class="topbar">
+                <span class="topbar-brand"><img src="img/logo-icon.png" alt="" class="brand-icon">CypherBay</span>
+                <div class="topbar-right">
+                    <span class="topbar-clock">00:00:00</span>
+                    <nav class="topbar-nav">
+                        <a href="/">index</a>
+                        <a href="/changelog.html">changelog</a>
+                        <a href="/blog.html">blog</a>
+                        <a href="/donate.html" class="active">donate</a>
+                    </nav>
+                </div>
+            </div>
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <a href="/" class="btn-back btn-back--static">&lt; Back</a>
+                    </div>
+                    <div class="header-center">
+                        <h1>CypherBay</h1>
+                        <p class="tagline">Donate</p>
+                    </div>
+                    <div class="header-right">
+                        <button id="theme-toggle" class="btn-theme" title="Toggle theme"></button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="donate-content">
+                <h1>Support CypherBay</h1>
+
+                <div class="donate-body">
+                    <p>CypherBay runs on hosting we pay for ourselves. No ads, no data broker deals, no premium tier holding features hostage behind a paywall. If it is useful to you and you want to help keep it free, independent, and running, here is how.</p>
+
+                    <h2>Pay in any coin, we receive XMR</h2>
+                    <p>Through <a href="https://trocador.app/anonpay/" target="_blank" rel="noopener">Trocador's AnonPay</a>, a no-KYC exchange aggregator, you can pay with almost any coin you already have: Bitcoin, Ethereum, Litecoin, whatever is sitting in your wallet. Trocador converts it in the background and we only ever receive Monero (XMR) on our end. Trocador never holds your funds, requires no account, no email, and no ID at any step, and can be used entirely over Tor or I2P if you want zero metadata trail. It is not affiliated with CypherBay, we simply use their public payment link, and this is not a sponsored placement.</p>
+
+                    <div class="donate-widget-wrap">
+                        <iframe
+                            src="https://trocador.app/anonpay/?ticker_to=xmr&amp;network_to=Mainnet&amp;address=43xzUc5S7v3LjruPgKfBM2ec7PtToU68bEjZREM8sznPH4biaXs3TQYdBXDF3kgoqWfhurmivvoGgVNDqvpzBL99RxerULo&amp;donation=True&amp;name=CypherBay&amp;description=Support%20CypherBay&amp;simple_mode=True&amp;buttonbgcolor=ff93b7&amp;textcolor=1a1a1a"
+                            width="100%" height="420" scrolling="no" style="border:0;" loading="lazy"
+                            title="Donate to CypherBay via Trocador AnonPay"></iframe>
+                    </div>
+                    <p class="widget-fallback">Widget not loading, or blocked by an extension? <a href="https://trocador.app/anonpay/?ticker_to=xmr&amp;network_to=Mainnet&amp;address=43xzUc5S7v3LjruPgKfBM2ec7PtToU68bEjZREM8sznPH4biaXs3TQYdBXDF3kgoqWfhurmivvoGgVNDqvpzBL99RxerULo&amp;donation=True&amp;name=CypherBay&amp;description=Support%20CypherBay&amp;simple_mode=True" target="_blank" rel="noopener">open it in a new tab instead</a>.</p>
+
+                    <h2>Prefer to send Monero directly</h2>
+                    <p>Send any amount to this address from your own wallet, no intermediary involved:</p>
+                    <div class="address-box">
+                        <span class="address-label">XMR</span>
+                        43xzUc5S7v3LjruPgKfBM2ec7PtToU68bEjZREM8sznPH4biaXs3TQYdBXDF3kgoqWfhurmivvoGgVNDqvpzBL99RxerULo
+                    </div>
+
+                    <div class="note-box">
+                        <p>We do not track who donates, how much, or when, beyond what is already invisible on the Monero blockchain by design. There is no donor wall, no perks tied to donation size, and no way for us to tell a supporter apart from any other visitor. That is not a missing feature, it is the same principle the rest of CypherBay is built on.</p>
+                    </div>
+
+                    <a class="back-link" href="/">&lt; Back to CypherBay</a>
+                </div>
+            </main>
+
+            <footer>
+                <p>CypherBay &nbsp;&middot;&nbsp; <a href="/">Back to app</a></p>
+            </footer>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem('cypherbay-theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('theme-toggle');
+            function updateIcon(theme) {
+                btn.innerHTML = theme === 'light'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+            }
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            updateIcon(current);
+            btn.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('cypherbay-theme', next);
+                updateIcon(next);
+            });
+        })();
+    </script>
+    <script src="js/clock.js"></script>
+</body>
+</html>
