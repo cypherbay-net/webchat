@@ -107,7 +107,7 @@
     line-height: 1.65;
 }
 .entry-desc code {
-    font-family: inherit;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     padding: 0.05rem 0.35rem;

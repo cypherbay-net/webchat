@@ -58,11 +58,15 @@ html { height: 100%; }
 
 body {
     height: 100%;
-    font-family: Consolas, Monaco, 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
     transition: background-color 0.3s, color 0.3s;
+}
+
+code, pre, kbd, samp {
+    font-family: Consolas, Monaco, 'Courier New', monospace;
 }
 
 .sr-only {
@@ -124,7 +128,7 @@ body {
     padding: 1.25rem 0 0;
 }
 
-.prompt-line { font-size: 0.8rem; margin-bottom: 0.85rem; color: var(--text-muted); }
+.prompt-line { font-size: 0.8rem; margin-bottom: 0.85rem; color: var(--text-muted); font-family: Consolas, Monaco, 'Courier New', monospace; }
 .prompt-user { color: var(--accent-primary); }
 .prompt-cmd { color: var(--text-primary); }
 
