@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docs · CypherBay</title>
+    <meta name="description" content="Full source code and technical documentation for CypherBay: how the encryption works, every API endpoint explained, rate limiting, and self-hosting.">
+    <meta name="author" content="CypherBay">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cypherbay.net/docs.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://cypherbay.net/docs.html">
+    <meta property="og:title" content="Docs · CypherBay">
+    <meta property="og:description" content="Full source code and technical documentation for CypherBay: encryption, API endpoints, rate limiting, and self-hosting.">
+    <meta property="og:site_name" content="CypherBay">
+    <meta property="og:image" content="https://cypherbay.net/img/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="CypherBay: anonymous end-to-end encrypted chat">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Docs · CypherBay">
+    <meta name="twitter:description" content="Full source code and technical documentation for CypherBay.">
+    <meta name="twitter:image" content="https://cypherbay.net/img/og-image.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
+    <meta name="referrer" content="no-referrer">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/docs.css">
+</head>
+<body>
+    <div id="app">
+        <div class="page active">
+            <div class="terminal-wrapper">
+            <div class="terminal">
+            <div class="topbar">
+                <span class="topbar-brand"><img src="img/logo-icon.png" alt="" class="brand-icon">CypherBay</span>
+                <div class="topbar-right">
+                    <span class="topbar-clock">00:00:00</span>
+                    <nav class="topbar-nav">
+                        <a href="/">index</a>
+                        <a href="/changelog.html">changelog</a>
+                        <a href="/blog.html">blog</a>
+                        <a href="/docs.html" class="active">docs</a>
+                        <a href="/donate.html">donate</a>
+                    </nav>
+                </div>
+            </div>
+            <header>
+                <div class="header-content">
+                    <div class="header-left">
+                        <a href="/" class="btn-back btn-back--static">&lt; Back</a>
+                    </div>
+                    <div class="header-center">
+                        <h1>CypherBay</h1>
+                        <p class="tagline">Docs</p>
+                    </div>
+                    <div class="header-right">
+                        <button id="theme-toggle" class="btn-theme" title="Toggle theme"></button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="docs-content">
+                <div class="docs-meta">
+                    <h1>Source Code and Technical Reference</h1>
+                    <span class="docs-date">Last updated 2026-09-29 &nbsp;&middot;&nbsp; <a href="https://github.com/cypherbay-net/webchat" target="_blank" rel="noopener">github.com/cypherbay-net/webchat</a></span>
+                </div>
+
+                <div class="docs-body">
+
+                <p>This page walks through the full source code of CypherBay, file by file, with explanations. Nothing is simplified or paraphrased. The code shown here is exactly what runs in production and what you will find in the repository.</p>
+
+                <h2>Architecture overview</h2>
+
+                <p>CypherBay has no database. Every session is a single JSON file on disk. There are no accounts, no user records, no persistent identity of any kind. The server is a small collection of PHP scripts that accept HTTP requests, read and write those JSON files, and return results. That is the entire backend.</p>
+
+                <p>All encryption happens in the browser. Before a message or file ever leaves your device, it is encrypted using AES-256-GCM with a key that the server has never seen and cannot derive. What the server stores is ciphertext: opaque bytes that mean nothing without the password you chose when you created the session.</p>
+
+                <p>Communication between the browser and the server uses plain HTTP polling. Every 2500 milliseconds the client asks the server for new messages since the last timestamp it received. There are no WebSockets, no server-sent events, and no persistent connections. This keeps the server implementation minimal and makes it trivial to self-host on any shared PHP host.</p>
+
+                <p>Sessions expire after one hour of inactivity. A separate cleanup script, meant to run as a cron job, deletes session files that have not been touched within that window.</p>
+
+                <h2>Encryption: js/crypto.js</h2>
+
+                <p>This is the entire cryptographic layer. It lives in a single file and uses only the Web Crypto API built into every modern browser. No external libraries are involved.</p>
+
+                <span class="file-label">js/crypto.js</span>
+<pre><code>const CypherCrypto = {
+    SALT_PREFIX: 'CypherBay-v2-',
+    PBKDF2_ITERATIONS: 310000,
+
+    async deriveKey(password, sessionId) {
+        const salt = new TextEncoder().encode(this.SALT_PREFIX + sessionId);
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            new TextEncoder().encode(password),
+            'PBKDF2',
+            false,
+            ['deriveKey']
+        );
+        return await crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: salt,
+                iterations: this.PBKDF2_ITERATIONS,
+                hash: 'SHA-256'
+            },
+            keyMaterial,
+            {
+                name: 'AES-GCM',
+                length: 256
+            },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    },
+
+    async encrypt(plaintext, key) {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ciphertext = await crypto.subtle.encrypt(
+            {
+                name: 'AES-GCM',
+                iv: iv
+            },
+            key,
+            new TextEncoder().encode(plaintext)
+        );
+        const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+        combined.set(iv);
+        combined.set(new Uint8Array(ciphertext), iv.length);
+        return this.arrayBufferToBase64(combined);
+    },
+
+    async decrypt(encryptedData, key) {
+        try {
+            const combined = this.base64ToArrayBuffer(encryptedData);
+            const iv = combined.slice(0, 12);
+            const ciphertext = combined.slice(12);
+            const plaintext = await crypto.subtle.decrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: iv
+                },
+                key,
+                ciphertext
+            );
+            return new TextDecoder().decode(plaintext);
+        } catch (e) {
+            return null;
+        }
+    },
+
+    generateSessionId() {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const randomBytes = crypto.getRandomValues(new Uint8Array(16));
+        let result = '';
+        for (let i = 0; i &lt; randomBytes.length; i++) {
+            result += chars[randomBytes[i] % chars.length];
+        }
+        return `${result.slice(0, 4)}-${result.slice(4, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}`;
+    },
+
+    generateMessageId() {
+        const timestamp = Date.now().toString(36);
+        const random = crypto.getRandomValues(new Uint8Array(4));
+        const randomStr = Array.from(random).map(b => b.toString(16).padStart(2, '0')).join('');
+        return `${timestamp}-${randomStr}`;
+    },
+
+    arrayBufferToBase64(buffer) {
+        let binary = '';
+        for (let i = 0; i &lt; buffer.length; i++) {
+            binary += String.fromCharCode(buffer[i]);
+        }
+        return btoa(binary);
+    },
+
+    base64ToArrayBuffer(base64) {
+        const binary = atob(base64);
+        const buffer = new Uint8Array(binary.length);
+        for (let i = 0; i &lt; binary.length; i++) {
+            buffer[i] = binary.charCodeAt(i);
+        }
+        return buffer;
+    },
+
+    isValidSessionId(sessionId) {
+        return /^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/.test(sessionId);
+    }
+};
+
+window.CypherCrypto = CypherCrypto;</code></pre>
+
+                <p><strong>Key derivation.</strong> <code>deriveKey</code> takes the user's password and the session ID, constructs a salt string of the form <code>CypherBay-v2-{sessionId}</code>, and runs PBKDF2 with SHA-256 for 310,000 iterations. The result is an AES-256-GCM key that is marked non-extractable by the browser, so it cannot be serialised or exfiltrated by JavaScript running on the page. Because the salt includes the session ID, the same password used in two different sessions produces two completely different keys.</p>
+
+                <p><strong>Encryption.</strong> <code>encrypt</code> generates a fresh 12-byte IV from the browser's CSPRNG on every call, runs AES-GCM with that IV, and prepends the IV directly to the ciphertext before base64-encoding the whole thing. The IV is not secret, it just has to be unique per message. Prepending it means the receiver always knows where to find it without any out-of-band signalling.</p>
+
+                <p><strong>Decryption.</strong> <code>decrypt</code> splits the incoming bytes at position 12 to recover the IV and ciphertext separately, then calls the browser's decrypt. If decryption fails for any reason, it returns <code>null</code> rather than throwing, so the caller can decide how to handle a bad message without an uncaught exception crashing the chat.</p>
+
+                <p><strong>Session IDs.</strong> <code>generateSessionId</code> draws 16 random bytes from the CSPRNG, maps each byte into the 36-character alphabet by taking the byte value modulo 36, and formats the result as four groups of four characters separated by hyphens. The resulting IDs look like <code>a3k2-wx9m-4bqr-zz01</code>. The modulo operation introduces a small bias because 256 is not a multiple of 36, but the practical impact on session ID unpredictability is negligible given 16 bytes of entropy.</p>
+
+                <h2>Session data format</h2>
+
+                <p>Every active session is stored as a single JSON file at <code>data/sessions/{sessionId}.json</code>. The structure looks like this:</p>
+
+<pre><code>{
+  "messages": [
+    {
+      "payload": "base64-encoded-ciphertext",
+      "timestamp": 1720000000000
+    }
+  ],
+  "typing": {
+    "payload": "base64-encoded-ciphertext",
+    "timestamp": 1720000001234
+  },
+  "lastActivity": 1720000001,
+  "created": 1719999900
+}</code></pre>
+
+                <p>The <code>payload</code> field in every message is the base64 string produced by <code>CypherCrypto.encrypt</code>. The server never decodes it, never inspects its content, and never logs it. From the server's perspective every payload is an opaque string of unknown length. The <code>timestamp</code> fields are millisecond Unix timestamps. <code>lastActivity</code> and <code>created</code> are second-precision Unix timestamps used for session expiry. The <code>typing</code> key is optional and is overwritten on every typing event rather than accumulated into an array.</p>
+
+                <p>Sessions cap at 100 messages and also discard any message older than one hour. Both checks happen on every write in <code>send.php</code>, so the file never grows unbounded even without the cron job running.</p>
+
+                <h2>API reference</h2>
+
+                <p>Every endpoint enforces HTTPS, either directly or by reading the <code>X-Forwarded-Proto</code> header when the server sits behind a proxy. All responses are JSON. All endpoints send a strict <code>Content-Security-Policy: default-src 'none'</code> header because they serve data, not pages.</p>
+
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Method</th>
+                            <th>What it does</th>
+                            <th>Rate limit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/api/create.php</code></td>
+                            <td>POST</td>
+                            <td>Create a new session</td>
+                            <td>5 per minute</td>
+                        </tr>
+                        <tr>
+                            <td><code>/api/messages.php</code></td>
+                            <td>GET</td>
+                            <td>Poll for new messages</td>
+                            <td>300 per minute</td>
+                        </tr>
+                        <tr>
+                            <td><code>/api/send.php</code></td>
+                            <td>POST</td>
+                            <td>Send a message or typing indicator</td>
+                            <td>80 per minute (messages only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>/api/upload.php</code></td>
+                            <td>POST</td>
+                            <td>Upload an encrypted file</td>
+                            <td>5 per minute</td>
+                        </tr>
+                        <tr>
+                            <td><code>/api/file.php</code></td>
+                            <td>GET</td>
+                            <td>Download an encrypted file blob</td>
+                            <td>none</td>
+                        </tr>
+                        <tr>
+                            <td><code>/api/delete.php</code></td>
+                            <td>POST</td>
+                            <td>Delete a session immediately</td>
+                            <td>10 per minute</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>api/create.php</h3>
+
+                <p>Creates a new session file. The client generates the session ID in the browser before calling this endpoint, using <code>CypherCrypto.generateSessionId()</code>. The server validates the format with a regex, then opens the file in exclusive-create mode (<code>fopen(..., 'x')</code>). That mode fails atomically if the file already exists, so two concurrent requests with the same session ID cannot both succeed.</p>
+
+                <span class="file-label">api/create.php</span>
+<pre><code>&lt;?php
+
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        http_response_code(403);
+        echo json_encode(['error' =&gt; 'HTTPS required']);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' =&gt; 'Method not allowed']);
+    exit;
+}
+
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(5, 60, 'create')) {
+    http_response_code(429);
+    echo json_encode(['error' =&gt; 'Too many requests']);
+    exit;
+}
+
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+
+if (!$data || !isset($data['sessionId'])) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid request']);
+    exit;
+}
+
+$sessionId = $data['sessionId'];
+
+if (!preg_match('/^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/', $sessionId)) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid session ID']);
+    exit;
+}
+
+$dataDir = __DIR__ . '/../data/sessions';
+
+if (!is_dir($dataDir)) {
+    @mkdir($dataDir, 0700, true);
+}
+if (!is_dir($dataDir)) {
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Server storage not available']);
+    exit;
+}
+
+$sessionFile = $dataDir . '/' . $sessionId . '.json';
+
+// режим 'x': эксклюзивное создание, ошибка, если файл уже существует
+$fp = @fopen($sessionFile, 'x');
+if (!$fp) {
+    http_response_code(409);
+    echo json_encode(['error' =&gt; 'Session already exists']);
+    exit;
+}
+
+$sessionData = ['messages' =&gt; [], 'lastActivity' =&gt; time(), 'created' =&gt; time()];
+fwrite($fp, json_encode($sessionData));
+fclose($fp);
+
+http_response_code(201);
+echo json_encode(['success' =&gt; true]);</code></pre>
+
+                <h3>api/messages.php</h3>
+
+                <p>The polling endpoint. The client sends a <code>since</code> timestamp and receives back only the messages that arrived after that point, plus any active typing indicator that is less than 4 seconds old. Using a shared read lock (<code>LOCK_SH</code>) means multiple simultaneous polls from different participants in the same session do not block each other.</p>
+
+                <span class="file-label">api/messages.php</span>
+<pre><code>&lt;?php
+
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        http_response_code(403);
+        echo json_encode(['error' =&gt; 'HTTPS required']);
+        exit;
+    }
+}
+
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(300, 60, 'messages')) {
+    http_response_code(429);
+    echo json_encode(['error' =&gt; 'Too many requests']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    echo json_encode(['error' =&gt; 'Method not allowed']);
+    exit;
+}
+
+$sessionId = isset($_GET['sessionId']) ? $_GET['sessionId'] : '';
+$since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
+
+if (!preg_match('/^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/', $sessionId)) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid session ID']);
+    exit;
+}
+
+$dataDir = __DIR__ . '/../data/sessions';
+$sessionFile = $dataDir . '/' . $sessionId . '.json';
+
+if (!file_exists($sessionFile)) {
+    http_response_code(404);
+    echo json_encode(['error' =&gt; 'Session not found']);
+    exit;
+}
+
+$fp = fopen($sessionFile, 'r');
+if (!$fp) {
+    echo json_encode(['messages' =&gt; []]);
+    exit;
+}
+flock($fp, LOCK_SH);
+$content = stream_get_contents($fp);
+flock($fp, LOCK_UN);
+fclose($fp);
+
+$sessionData = json_decode($content, true);
+
+if (!$sessionData || !isset($sessionData['messages'])) {
+    echo json_encode(['messages' =&gt; []]);
+    exit;
+}
+
+$messages = array_filter($sessionData['messages'], function($msg) use ($since) {
+    return $msg['timestamp'] &gt; $since;
+});
+
+$messages = array_values($messages);
+
+$response = ['messages' =&gt; $messages];
+
+if (isset($sessionData['typing'])) {
+    $typingAge = round(microtime(true) * 1000) - $sessionData['typing']['timestamp'];
+    if ($typingAge &lt; 4000) {
+        $response['typing'] = $sessionData['typing'];
+    }
+}
+
+echo json_encode($response);</code></pre>
+
+                <h3>api/send.php</h3>
+
+                <p>Handles both regular messages and typing indicators in the same endpoint. If the request body contains a <code>typing</code> key, it is treated as a typing event and skips the rate limit check entirely. That is intentional: typing events are frequent and ephemeral, and consuming the same rate limit bucket as real messages would make it easy to exhaust the limit by just typing. The exclusive write lock (<code>LOCK_EX</code>) prevents two concurrent senders from corrupting the session file.</p>
+
+                <span class="file-label">api/send.php</span>
+<pre><code>&lt;?php
+
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        http_response_code(403);
+        echo json_encode(['error' =&gt; 'HTTPS required']);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' =&gt; 'Method not allowed']);
+    exit;
+}
+
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+
+if (!$data || !isset($data['sessionId'])) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid request']);
+    exit;
+}
+
+$sessionId = $data['sessionId'];
+$isTyping = isset($data['typing']) &amp;&amp; is_string($data['typing']);
+
+if (!$isTyping) {
+    require_once __DIR__ . '/ratelimit.php';
+    if (!enforceRateLimit(80, 60, 'send')) {
+        http_response_code(429);
+        echo json_encode(['error' =&gt; 'Too many requests']);
+        exit;
+    }
+}
+$payload = isset($data['payload']) ? $data['payload'] : null;
+
+if (!$isTyping &amp;&amp; !$payload) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid request']);
+    exit;
+}
+
+if (!preg_match('/^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/', $sessionId)) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid session ID']);
+    exit;
+}
+
+if (!$isTyping &amp;&amp; (!is_string($payload) || strlen($payload) &gt; 100000)) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid payload']);
+    exit;
+}
+
+if ($isTyping &amp;&amp; strlen($data['typing']) &gt; 5000) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid typing data']);
+    exit;
+}
+
+$dataDir = __DIR__ . '/../data/sessions';
+
+if (!is_dir($dataDir)) {
+    @mkdir($dataDir, 0700, true);
+}
+if (!is_dir($dataDir)) {
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Server storage not available']);
+    exit;
+}
+
+$sessionFile = $dataDir . '/' . $sessionId . '.json';
+
+if (!file_exists($sessionFile)) {
+    http_response_code(404);
+    echo json_encode(['error' =&gt; 'Session not found']);
+    exit;
+}
+
+$fp = @fopen($sessionFile, 'r+');
+if (!$fp) {
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Server error']);
+    exit;
+}
+
+if (!flock($fp, LOCK_EX)) {
+    fclose($fp);
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Server error']);
+    exit;
+}
+
+$sessionData = ['messages' =&gt; [], 'lastActivity' =&gt; time()];
+$content = stream_get_contents($fp);
+if ($content) {
+    $saved = json_decode($content, true);
+    if ($saved !== null &amp;&amp; is_array($saved)) {
+        $sessionData = array_merge($sessionData, $saved);
+        if (!is_array($sessionData['messages'])) {
+            $sessionData['messages'] = [];
+        }
+    }
+}
+
+if ($isTyping) {
+    $sessionData['typing'] = [
+        'payload' =&gt; $data['typing'],
+        'timestamp' =&gt; round(microtime(true) * 1000)
+    ];
+} else {
+    $message = [
+        'payload' =&gt; $payload,
+        'timestamp' =&gt; round(microtime(true) * 1000)
+    ];
+    $sessionData['messages'][] = $message;
+
+    if (count($sessionData['messages']) &gt; 100) {
+        $sessionData['messages'] = array_slice($sessionData['messages'], -100);
+    }
+
+    $oneHourAgo = (microtime(true) * 1000) - (3600 * 1000);
+    $sessionData['messages'] = array_values(array_filter($sessionData['messages'], function($msg) use ($oneHourAgo) {
+        return $msg['timestamp'] &gt; $oneHourAgo;
+    }));
+}
+
+$sessionData['lastActivity'] = time();
+
+ftruncate($fp, 0);
+rewind($fp);
+fwrite($fp, json_encode($sessionData));
+fflush($fp);
+flock($fp, LOCK_UN);
+fclose($fp);
+
+if ($isTyping) {
+    echo json_encode(['success' =&gt; true]);
+} else {
+    echo json_encode(['success' =&gt; true, 'timestamp' =&gt; $message['timestamp']]);
+}</code></pre>
+
+                <h3>api/upload.php</h3>
+
+                <p>Accepts a file uploaded via a normal <code>multipart/form-data</code> POST. The file is an encrypted blob the browser prepared before sending, so the server never sees the original content, the filename, or the MIME type. It is stored under a random 32-character hex ID in <code>data/uploads/</code>. On every upload, any file in that directory older than seven days is deleted first. The maximum accepted size is 25 MB.</p>
+
+                <span class="file-label">api/upload.php</span>
+<pre><code>&lt;?php
+
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        http_response_code(403);
+        echo json_encode(['error' =&gt; 'HTTPS required']);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' =&gt; 'Method not allowed']);
+    exit;
+}
+
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(5, 60, 'upload')) {
+    http_response_code(429);
+    echo json_encode(['error' =&gt; 'Too many uploads. Try again in a minute.']);
+    exit;
+}
+
+if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+    $code = isset($_FILES['file']) ? $_FILES['file']['error'] : 'no_file';
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'No file uploaded', 'code' =&gt; $code]);
+    exit;
+}
+
+$file = $_FILES['file'];
+$maxSize = 25 * 1024 * 1024;
+
+if ($file['size'] &gt; $maxSize) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'File too large (max 25 MB)']);
+    exit;
+}
+
+$uploadDir = __DIR__ . '/../data/uploads';
+if (!is_dir($uploadDir)) {
+    @mkdir($uploadDir, 0755, true);
+}
+if (!is_dir($uploadDir)) {
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Server storage not available']);
+    exit;
+}
+
+// удаляем зашифрованные файлы старше 7 дней при каждой загрузке
+$cutoff = time() - 7 * 24 * 3600;
+foreach (glob($uploadDir . '/*') ?: [] as $f) {
+    if (is_file($f) &amp;&amp; filemtime($f) &lt; $cutoff) @unlink($f);
+}
+
+$id       = bin2hex(random_bytes(16));
+$dataPath = $uploadDir . '/' . $id;
+
+if (!move_uploaded_file($file['tmp_name'], $dataPath)) {
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Could not save file on server']);
+    exit;
+}
+
+$scheme  = (!empty($_SERVER['HTTPS']) &amp;&amp; $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host    = $_SERVER['HTTP_HOST'];
+$url     = $scheme . '://' . $host . '/api/file.php?id=' . $id;
+
+echo json_encode(['success' =&gt; true, 'url' =&gt; $url]);</code></pre>
+
+                <h3>api/file.php</h3>
+
+                <p>Serves the encrypted blob back to the browser. The response is <code>application/octet-stream</code> with no filename or MIME type hint in the headers because the server genuinely does not know either. The browser's JavaScript decrypts the bytes, recovers the original filename and type from within the decrypted payload, and presents the file to the user.</p>
+
+                <span class="file-label">api/file.php</span>
+<pre><code>&lt;?php
+
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    exit;
+}
+
+$id = isset($_GET['id']) ? $_GET['id'] : '';
+if (!preg_match('/^[a-f0-9]{32}$/', $id)) {
+    http_response_code(400);
+    exit('Invalid file ID');
+}
+
+$uploadDir = __DIR__ . '/../data/uploads';
+$dataPath  = $uploadDir . '/' . $id;
+
+if (!file_exists($dataPath)) {
+    http_response_code(404);
+    exit('File not found or expired');
+}
+
+// отдаём зашифрованный blob как есть, расшифровка происходит в браузере клиента
+header('Content-Type: application/octet-stream');
+header('Content-Length: ' . filesize($dataPath));
+header('Content-Disposition: attachment; filename="' . $id . '.bin"');
+header('Cache-Control: private, max-age=604800');
+
+readfile($dataPath);</code></pre>
+
+                <h3>api/delete.php</h3>
+
+                <p>Deletes a session file immediately. Used when a participant leaves the chat and wants to remove the session from the server at once rather than waiting for the cron job. Because the session file holds only ciphertext, deleting it is the only meaningful way to destroy the conversation record.</p>
+
+                <span class="file-label">api/delete.php</span>
+<pre><code>&lt;?php
+
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
+
+if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    if (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https') {
+        http_response_code(403);
+        echo json_encode(['error' =&gt; 'HTTPS required']);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' =&gt; 'Method not allowed']);
+    exit;
+}
+
+require_once __DIR__ . '/ratelimit.php';
+if (!enforceRateLimit(10, 60, 'delete')) {
+    http_response_code(429);
+    echo json_encode(['error' =&gt; 'Too many requests']);
+    exit;
+}
+
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+
+if (!$data || !isset($data['sessionId'])) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid request']);
+    exit;
+}
+
+$sessionId = $data['sessionId'];
+
+if (!preg_match('/^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/', $sessionId)) {
+    http_response_code(400);
+    echo json_encode(['error' =&gt; 'Invalid session ID']);
+    exit;
+}
+
+$dataDir = __DIR__ . '/../data/sessions';
+$sessionFile = $dataDir . '/' . $sessionId . '.json';
+
+if (!file_exists($sessionFile)) {
+    http_response_code(404);
+    echo json_encode(['error' =&gt; 'Session not found']);
+    exit;
+}
+
+if (unlink($sessionFile)) {
+    echo json_encode(['success' =&gt; true]);
+} else {
+    http_response_code(500);
+    echo json_encode(['error' =&gt; 'Failed to delete session']);
+}</code></pre>
+
+                <h2>Rate limiting: api/ratelimit.php</h2>
+
+                <p>The rate limiter is included by every endpoint that needs it. It stores one JSON file per IP address per action type under <code>data/ratelimit/</code>. The IP address is hashed with SHA-256 before it becomes a filename, so no raw IP addresses are written to disk. Each file holds a counter and a window start timestamp. If the window has expired, the counter resets to zero. An exclusive file lock prevents races between concurrent requests from the same IP.</p>
+
+                <p>When the rate limit directory cannot be created or a file cannot be opened, the function returns <code>true</code> (allow) rather than blocking. Failing open is a deliberate choice: a storage problem should not take the service down.</p>
+
+                <span class="file-label">api/ratelimit.php</span>
+<pre><code>&lt;?php
+function enforceRateLimit($maxRequests, $windowSeconds, $key = '') {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $hash = hash('sha256', $ip . $key);
+    $dir = __DIR__ . '/../data/ratelimit';
+
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    if (!is_dir($dir)) {
+        return true; // не удалось создать директорию, пропускаем запрос, а не падаем
+    }
+
+    $file = $dir . '/' . substr($hash, 0, 40) . '.json';
+    $now = time();
+
+    $fp = @fopen($file, 'c+');
+    if (!$fp) {
+        return true;
+    }
+
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return true;
+    }
+
+    $content = stream_get_contents($fp);
+    $data = $content ? json_decode($content, true) : null;
+
+    if (!$data || ($now - $data['window_start']) &gt;= $windowSeconds) {
+        $data = ['count' =&gt; 0, 'window_start' =&gt; $now];
+    }
+
+    $data['count']++;
+    $allowed = $data['count'] &lt;= $maxRequests;
+
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($data));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+
+    return $allowed;
+}</code></pre>
+
+                <h2>Cleanup: api/cleanup.php</h2>
+
+                <p>This script is only meant to run from the command line as a cron job. Calling it over HTTP returns a 404 immediately. It deletes any session file whose <code>lastActivity</code> timestamp is more than one hour old, and also sweeps the rate limit directory of any files older than one hour. A reasonable cron schedule is every five minutes.</p>
+
+                <span class="file-label">api/cleanup.php</span>
+<pre><code>&lt;?php
+if (php_sapi_name() !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
+$dataDir = __DIR__ . '/../data/sessions';
+
+if (!is_dir($dataDir)) {
+    exit;
+}
+
+$files = glob($dataDir . '/*.json');
+
+$now = time();
+$maxAge = 3600;
+
+foreach ($files as $file) {
+    $content = file_get_contents($file);
+    $data = json_decode($content, true);
+
+    if ($data &amp;&amp; isset($data['lastActivity'])) {
+        $age = $now - $data['lastActivity'];
+
+        if ($age &gt; $maxAge) {
+            unlink($file);
+        }
+    } else {
+        $fileAge = $now - filemtime($file);
+
+        if ($fileAge &gt; $maxAge) {
+            unlink($file);
+        }
+    }
+}
+
+$ratelimitDir = __DIR__ . '/../data/ratelimit';
+if (is_dir($ratelimitDir)) {
+    foreach (glob($ratelimitDir . '/*.json') as $file) {
+        if ($now - filemtime($file) &gt; 3600) {
+            unlink($file);
+        }
+    }
+}
+
+echo "Cleanup completed\n";</code></pre>
+
+                <p>Add it to cron with something like:</p>
+<pre><code>*/5 * * * * php /var/www/cypherbay/api/cleanup.php</code></pre>
+
+                <h2>Self-hosting</h2>
+
+                <p>CypherBay runs on any server that has PHP 7.4 or newer and a writable directory for storing session data. There is no database, no Composer dependency, and no build step. Clone the repository, point your web server at the document root, make sure <code>data/</code> is writable by the PHP process, and add the cron job above. That is everything.</p>
+
+                <p>If you run it behind a reverse proxy like Nginx, set the <code>X-Forwarded-Proto: https</code> header so the HTTPS check in each API endpoint passes correctly.</p>
+
+                <div class="note-box">
+                    <p>The full source is available at <a href="https://github.com/cypherbay-net/webchat" target="_blank" rel="noopener">github.com/cypherbay-net/webchat</a> under the license in the repository root. Pull requests and bug reports are welcome.</p>
+                </div>
+
+                <a class="back-link" href="/">&lt; Back to app</a>
+                </div>
+            </main>
+
+            <footer>
+                <p>CypherBay &nbsp;&middot;&nbsp; <a href="/">Back to app</a></p>
+            </footer>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/clock.js"></script>
+</body>
+</html>
