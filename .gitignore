@@ -1,0 +1,8 @@
+# runtime data, not part of the repo
+data/sessions/
+data/ratelimit/
+data/uploads/
+
+# python cache
+__pycache__/
+*.pyc

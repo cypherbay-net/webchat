@@ -405,6 +405,8 @@
                 checkResumeCookie();
             }
 
+            // восстанавливаем подпись кнопки, иначе она остаётся 'connecting...' при возврате
+            btn.textContent = originalText;
             showPage('chat');
             addSystemMessage('Chat joined. All messages are end-to-end encrypted.');
             startPolling();

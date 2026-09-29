@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,79 +30,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; frame-src https://trocador.app; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
     <meta name="referrer" content="no-referrer">
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .donate-content {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .donate-content h1 {
-            font-size: 1.6rem;
-            line-height: 1.35;
-            color: var(--text-primary);
-            margin: 0 0 1.5rem 0;
-        }
-        .donate-body p {
-            font-size: 0.95rem;
-            line-height: 1.75;
-            color: var(--text-secondary);
-        }
-        .donate-body h2 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-top: 2.5rem;
-            margin-bottom: 0.75rem;
-            letter-spacing: 0.01em;
-        }
-        .donate-widget-wrap {
-            margin: 1.75rem 0 0.75rem 0;
-            max-width: 360px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-tertiary);
-            overflow: hidden;
-        }
-        .donate-widget-wrap iframe {
-            display: block;
-        }
-        .widget-fallback {
-            font-size: 0.8rem !important;
-            color: var(--text-muted) !important;
-            margin-bottom: 1.75rem;
-        }
-        .address-box {
-            margin: 1rem 0 1.75rem 0;
-            padding: 1rem 1.25rem;
-            border: 1px solid var(--border-color);
-            background: var(--bg-tertiary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem;
-            line-height: 1.6;
-            color: var(--text-primary);
-            word-break: break-all;
-        }
-        .address-label {
-            display: block;
-            font-family: inherit;
-            font-size: 0.72rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 0.4rem;
-        }
-        .note-box {
-            margin: 2rem 0;
-            padding: 1.25rem 1.5rem;
-            border: 1px solid var(--border-color);
-            background: var(--bg-tertiary);
-        }
-        .note-box p:last-child { margin-bottom: 0; }
-        .back-link {
-            display: inline-block;
-            margin-top: 2.5rem;
-            font-size: 0.85rem;
-        }
-    </style>
+    <link rel="stylesheet" href="css/donate.css">
 
     <script type="application/ld+json">
     {
@@ -181,7 +109,7 @@
                     <div class="donate-widget-wrap">
                         <iframe
                             src="https://trocador.app/anonpay/?ticker_to=xmr&amp;network_to=Mainnet&amp;address=43xzUc5S7v3LjruPgKfBM2ec7PtToU68bEjZREM8sznPH4biaXs3TQYdBXDF3kgoqWfhurmivvoGgVNDqvpzBL99RxerULo&amp;donation=True&amp;name=CypherBay&amp;description=Support%20CypherBay&amp;simple_mode=True&amp;buttonbgcolor=ff93b7&amp;textcolor=1a1a1a"
-                            width="100%" height="420" scrolling="no" style="border:0;" loading="lazy"
+                            width="100%" height="420" scrolling="no" loading="lazy"
                             title="Donate to CypherBay via Trocador AnonPay"></iframe>
                     </div>
                     <p class="widget-fallback">Widget not loading, or blocked by an extension? <a href="https://trocador.app/anonpay/?ticker_to=xmr&amp;network_to=Mainnet&amp;address=43xzUc5S7v3LjruPgKfBM2ec7PtToU68bEjZREM8sznPH4biaXs3TQYdBXDF3kgoqWfhurmivvoGgVNDqvpzBL99RxerULo&amp;donation=True&amp;name=CypherBay&amp;description=Support%20CypherBay&amp;simple_mode=True" target="_blank" rel="noopener">open it in a new tab instead</a>.</p>
@@ -209,26 +137,7 @@
         </div>
     </div>
 
-    <script>
-        (function() {
-            const saved = localStorage.getItem('cypherbay-theme');
-            if (saved) document.documentElement.setAttribute('data-theme', saved);
-            const btn = document.getElementById('theme-toggle');
-            function updateIcon(theme) {
-                btn.innerHTML = theme === 'light'
-                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-            }
-            const current = document.documentElement.getAttribute('data-theme') || 'dark';
-            updateIcon(current);
-            btn.addEventListener('click', () => {
-                const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', next);
-                localStorage.setItem('cypherbay-theme', next);
-                updateIcon(next);
-            });
-        })();
-    </script>
+    <script src="js/theme.js"></script>
     <script src="js/clock.js"></script>
 </body>
 </html>

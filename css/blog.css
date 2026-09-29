@@ -1,0 +1,47 @@
+.blog-content {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+.blog-header {
+    margin-bottom: 2.5rem;
+}
+.blog-header h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    color: var(--text-primary);
+}
+.blog-header p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+.post-preview {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.post-preview:last-child { border-bottom: none; }
+.post-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+.post-preview h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0.4rem 0 0.6rem 0;
+    letter-spacing: 0.01em;
+}
+.post-preview h3 a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+.post-preview h3 a:hover {
+    color: var(--accent-primary);
+}
+.post-excerpt {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.65;
+}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,56 +26,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
 
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
+    <meta name="referrer" content="no-referrer">
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .blog-content {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .blog-header {
-            margin-bottom: 2.5rem;
-        }
-        .blog-header h2 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 0.4rem;
-            color: var(--text-primary);
-        }
-        .blog-header p {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-        .post-preview {
-            padding: 1.5rem 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .post-preview:last-child { border-bottom: none; }
-        .post-date {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-        .post-preview h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 0.4rem 0 0.6rem 0;
-            letter-spacing: 0.01em;
-        }
-        .post-preview h3 a {
-            color: var(--text-primary);
-            text-decoration: none;
-        }
-        .post-preview h3 a:hover {
-            color: var(--accent-primary);
-        }
-        .post-excerpt {
-            color: var(--text-secondary);
-            font-size: 0.88rem;
-            line-height: 1.65;
-        }
-    </style>
+    <link rel="stylesheet" href="css/blog.css">
 
     <script type="application/ld+json">
     {
@@ -181,26 +135,7 @@
         </div>
     </div>
 
-    <script>
-        (function() {
-            const saved = localStorage.getItem('cypherbay-theme');
-            if (saved) document.documentElement.setAttribute('data-theme', saved);
-            const btn = document.getElementById('theme-toggle');
-            function updateIcon(theme) {
-                btn.innerHTML = theme === 'light'
-                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-            }
-            const current = document.documentElement.getAttribute('data-theme') || 'dark';
-            updateIcon(current);
-            btn.addEventListener('click', () => {
-                const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', next);
-                localStorage.setItem('cypherbay-theme', next);
-                updateIcon(next);
-            });
-        })();
-    </script>
+    <script src="js/theme.js"></script>
     <script src="js/clock.js"></script>
 </body>
 </html>
